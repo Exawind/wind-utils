@@ -76,17 +76,17 @@ $(BINDIR)/$(TARGET) : $(objs)
 	@echo "Link of $@"
 	@mkdir -p $(@D)
 	$(LD) -o $@ $(FCFLAGS) $(objs) $(LIBS) $(LDFLAGS) 
-	@echo "SUCCESS"
+	@echo "Successful compilation"
 
 doc : 
 	@echo "Generating documentation with Doxygen."
 	doxygen Doxyfile
 
 clean :
-	@echo "Clean of $(ODIR) and $(BINDIR)"
-	@-rm -rf $(ODIR) $(BINDIR)
+	@echo "Clean of $(ODIR), doc, and $(BINDIR)"
+	@-rm -rf $(ODIR) $(BINDIR) doc
 
 cleanall :
-	@-rm -rv $(ODIR) $(BINDIR)
+	@-rm -rv $(ODIR) $(BINDIR) doc
 
 .PHONY : clean cleanall all doc

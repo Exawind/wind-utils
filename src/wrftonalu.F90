@@ -74,6 +74,100 @@ PROGRAM wrftonalu
   DOUBLE PRECISION P1000MB,R_D,CP, RHO0
   PARAMETER (P1000MB=100000.D0,R_D=266.9D0,CP=7.D0*R_D/2.D0)
 
+
+  ! mine
+
+  integer,dimension(8) :: date_values
+  character(12)  :: date_str
+  CHARACTER(2) :: dd
+  CHARACTER(2) :: mm
+  CHARACTER(4) :: yyyy
+
+  character(len=255) :: meshname
+  integer ncmeshid, ofid
+  integer num_side_sets_id, num_side_sets
+  integer len_string_dimid, len_line_dimid, four_dimid, num_info_dimid &
+       , num_qa_rec_dimid, len_name_dimid, num_dim_dimid, time_step_dimid &
+       , num_nodes_dimid, num_elem_dimid, num_el_blk_dimid, num_el_in_blk1_dimid &
+       , num_nod_per_el1_dimid, num_nod_var_dimid
+
+
+  integer info_records_id
+  integer info_records_dims(2)
+  character(255) info_records(3)
+
+  integer qa_records_id
+  integer qa_records_dims(3)
+
+  integer time_whole_id
+  integer time_whole_dims
+
+  integer node_num_map_id
+  integer node_num_map_dims
+
+  integer elem_num_map_id
+  integer elem_num_map_dims
+
+  integer eb_status_id
+  integer eb_status_dims
+
+  integer eb_prop1_id
+  integer eb_prop1_dims
+
+  integer eb_names_id
+  integer eb_names_dims(2)
+
+  integer coordx_id
+  integer coordx_dims(2)
+
+  integer coordy_id
+  integer coordy_dims(2)
+
+  integer coordz_id
+  integer coordz_dims(2)
+
+  integer coor_names_id
+  integer coor_names_dims(2)
+
+  integer connect1_id
+  integer connect1_dims(2)
+
+  integer vals_nod_var1_id
+  integer vals_nod_var1_dims(2)
+
+  integer vals_nod_var2_id
+  integer vals_nod_var2_dims(2)
+  
+  integer vals_nod_var3_id
+  integer vals_nod_var3_dims(2)
+
+  integer vals_nod_var4_id
+  integer vals_nod_var4_dims(2)
+
+  integer vals_nod_var5_id
+  integer vals_nod_var5_dims(2)
+
+  integer vals_nod_var6_id
+  integer vals_nod_var6_dims(2)
+
+  integer vals_nod_var7_id
+  integer vals_nod_var7_dims(2)
+
+  integer name_nod_var_id
+  integer name_nod_var_dims(2)
+  
+  
+  !================================================================================
+  !
+  ! Get system information
+  !
+  !================================================================================
+  call date_and_time(VALUES=date_values)
+  write(  dd,'(i2)') date_values(3)
+  write(  mm,'(i2)') date_values(2)
+  write(yyyy,'(i4)') date_values(1)
+  write(date_str,*),dd,'/',mm,'/',yyyy
+
   !================================================================================
   !
   ! Parse input arguments
@@ -182,6 +276,12 @@ PROGRAM wrftonalu
   stat = NF_INQ_VARID(ncid,'Times',varid) ! get ID of variable Times
   CALL ncderrcheck( __LINE__,stat)
   stat = NF_INQ_VAR(ncid,varid,vname,xtype,storeddim,dimids,natts) ! get all information about Times
+  write(*,*)'varid',varid
+  write(*,*)'vname',vname
+  write(*,*)'xtype',xtype
+  write(*,*)'storeddim',storeddim
+  write(*,*)'dimids',dimids
+  write(*,*)'natts',natts
   CALL ncderrcheck( __LINE__,stat)
   stat = NF_INQ_DIMLEN(ncid,dimids(1),cnt(1))
   CALL ncderrcheck( __LINE__,stat)
@@ -189,13 +289,13 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__,stat)
   stat = NF_GET_VARA_TEXT(ncid,varid,strt,cnt,Times) ! read in the Times data in the Times text
   CALL ncderrcheck( __LINE__,stat )
-  DO WHILE (.TRUE.)
+  DO WHILE (.TRUE.) ! just replace : char by _ in the Times variable
      tmpstr = Times(it)
      i = INDEX(Times(it),':')
      IF ( i .EQ. 0 ) EXIT
      Times(it)(i:i) = '_'
   ENDDO
-
+  
   ! Allocate a lot of variables
   ips = ids ; ipe = ide
   jps = jds ; jpe = jde
@@ -260,7 +360,6 @@ PROGRAM wrftonalu
   CALL getvar_real(ctrl,ncid,nfiles,'P' ,p ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
   CALL getvar_real(ctrl,ncid,nfiles,'PB' ,pb ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
 
-
   have_hfx = .FALSE. ! false value going in says this field is required
   CALL getvar_real(have_hfx,ncid,nfiles,'HFX',hfx,it,3,ips,ipe-1,jps,jpe-1,1,1)
 
@@ -277,6 +376,241 @@ PROGRAM wrftonalu
   DEALLOCATE(phb)
   DEALLOCATE(u_)
   DEALLOCATE(v_)
+
+  !================================================================================
+  !
+  ! Read the Exodus BC from the mesh and interpolate WRF data there
+  !
+  !================================================================================
+  write(*,*)"Reading Exodus now"
+
+  ! open mesh file (needs to be netCDF format)
+  meshname = "ncmesh.nc"
+  WRITE(0,*)'opening mesh ',TRIM(meshname)
+  stat = NF_OPEN(meshname, NF_NOWRITE, ncmeshid)
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! Check to make sure there are 6 sides
+  stat = NF_INQ_DIMID(ncmeshid,"num_side_sets", num_side_sets_id)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = NF_INQ_DIMLEN(ncmeshid,num_side_sets_id, num_side_sets)
+  CALL ncderrcheck( __LINE__,stat)
+  if (num_side_sets .NE. 6) then
+     WRITE(0,*)"Error. Number of sides (=",num_side_sets,") is not equal to 6. Fix the mesh."
+     STOP 99
+  endif
+
+  !================================================================================
+  !
+  ! Create the ouput Nalu files for each BC
+  !
+  !================================================================================
+  stat = NF_CREATE("front.nc", NF_CLOBBER, ofid);
+  CALL ncderrcheck( __LINE__,stat)
+
+  ! Write out some standard dimensions
+  stat = nf_def_dim(ofid, "len_string", 33 , len_string_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "len_line", 81 , len_line_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "four", 4 , four_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_info", 3 , num_info_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_qa_rec", 2 , num_qa_rec_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "len_name", 33 , len_name_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_dim", 3 , num_dim_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "time_step", NF_UNLIMITED , time_step_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_nodes", 1681 , num_nodes_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_elem", 1600 , num_elem_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_el_blk", 1 , num_el_blk_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_el_in_blk1", 1600 , num_el_in_blk1_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_nod_per_el1", 4 , num_nod_per_el1_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_def_dim(ofid, "num_nod_var", 7 , num_nod_var_dimid) ! CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! write some global attributes
+  stat = nf_put_att_text(ofid, nf_global, "api_version", 5, "6.36f") !CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_text(ofid, nf_global, "version", 5, "6.36f") !CHANGE
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_int(ofid, nf_global, "floating_point_word_size", nf_int, 1, 8)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_int(ofid, nf_global, "file_size", nf_int, 1, 1)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_int(ofid, nf_global, "maximum_name_length", nf_int, 1, 18)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_int(ofid, nf_global, "int64_status", nf_int, 1, 0)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_text(ofid, nf_global, "title", 1, "")
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! info_records variable
+  info_records_dims(1) = len_line_dimid
+  info_records_dims(2) = num_info_dimid
+  stat = nf_def_var(ofid, "info_records", nf_char, 2, info_records_dims , info_records_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! qa_records variable
+  qa_records_dims(1) = len_string_dimid
+  qa_records_dims(2) = four_dimid
+  qa_records_dims(3) = num_qa_rec_dimid
+  stat = nf_def_var(ofid, "qa_records", nf_char, 3, qa_records_dims , qa_records_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! time_whole variable
+  time_whole_dims = time_step_dimid
+  stat = nf_def_var(ofid, "time_whole", nf_double, 1, time_whole_dims , time_whole_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! node_num_map variable
+  node_num_map_dims = num_nodes_dimid
+  stat = nf_def_var(ofid, "node_num_map", nf_int, 1, node_num_map_dims , node_num_map_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! elem_num_map variable
+  elem_num_map_dims = num_elem_dimid
+  stat = nf_def_var(ofid, "elem_num_map", nf_int, 1, elem_num_map_dims , elem_num_map_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! eb_status variable
+  eb_status_dims = num_el_blk_dimid
+  stat = nf_def_var(ofid, "eb_status", nf_int, 1, eb_status_dims , eb_status_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! eb_prop1 variable
+  eb_prop1_dims = num_el_blk_dimid
+  stat = nf_def_var(ofid, "eb_prop1", nf_int, 1, eb_prop1_dims , eb_prop1_id)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_text(ofid, eb_prop1_id, "name", 2, "ID")
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! eb_names variable
+  eb_names_dims(1) = len_name_dimid
+  eb_names_dims(2) = num_el_blk_dimid
+  stat = nf_def_var(ofid, "eb_names", nf_char, 2, eb_names_dims , eb_names_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! coordx variable
+  coordx_dims = num_nodes_dimid
+  stat = nf_def_var(ofid, "coordx", nf_double, 1, coordx_dims , coordx_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! coordy variable
+  coordy_dims = num_nodes_dimid
+  stat = nf_def_var(ofid, "coordy", nf_double, 1, coordy_dims , coordy_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! coordz variable
+  coordz_dims = num_nodes_dimid
+  stat = nf_def_var(ofid, "coordz", nf_double, 1, coordz_dims , coordz_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! coor_names variable
+  coor_names_dims(1) = len_name_dimid
+  coor_names_dims(2) = num_dim_dimid
+  stat = nf_def_var(ofid, "coor_names", nf_char, 2, coor_names_dims , coor_names_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! connect1 variable
+  connect1_dims(1) = num_nod_per_el1_dimid
+  connect1_dims(2) = num_el_in_blk1_dimid
+  stat = nf_def_var(ofid, "connect1", nf_int, 2, connect1_dims , connect1_id)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = nf_put_att_text(ofid, connect1_id, "elem_type", 6, "SHELL4")
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var1 variable
+  vals_nod_var1_dims(1) = num_nodes_dimid
+  vals_nod_var1_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var1", nf_double, 2, vals_nod_var1_dims , vals_nod_var1_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var2 variable
+  vals_nod_var2_dims(1) = num_nodes_dimid
+  vals_nod_var2_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var2", nf_double, 2, vals_nod_var2_dims , vals_nod_var2_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var3 variable
+  vals_nod_var3_dims(1) = num_nodes_dimid
+  vals_nod_var3_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var3", nf_double, 2, vals_nod_var3_dims , vals_nod_var3_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var4 variable
+  vals_nod_var4_dims(1) = num_nodes_dimid
+  vals_nod_var4_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var4", nf_double, 2, vals_nod_var4_dims , vals_nod_var4_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var5 variable
+  vals_nod_var5_dims(1) = num_nodes_dimid
+  vals_nod_var5_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var5", nf_double, 2, vals_nod_var5_dims , vals_nod_var5_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var6 variable
+  vals_nod_var6_dims(1) = num_nodes_dimid
+  vals_nod_var6_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var6", nf_double, 2, vals_nod_var6_dims , vals_nod_var6_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! vals_nod_var7 variable
+  vals_nod_var7_dims(1) = num_nodes_dimid
+  vals_nod_var7_dims(2) = time_step_dimid
+  stat = nf_def_var(ofid, "vals_nod_var7", nf_double, 2, vals_nod_var7_dims , vals_nod_var7_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! name_nod_var variable
+  name_nod_var_dims(1) = len_name_dimid
+  name_nod_var_dims(2) = num_nod_var_dimid
+  stat = nf_def_var(ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
+  CALL ncderrcheck( __LINE__,stat)
+  
+  ! Close the file
+  stat = NF_CLOSE(ofid);
+  CALL ncderrcheck( __LINE__ ,stat )
+
+
+  ! Open file in data mode to write out the variables
+  stat = NF_OPEN("front.nc", NF_WRITE, ofid);
+  CALL ncderrcheck( __LINE__,stat)
+
+  ! info_records variable
+  write(info_records(1),*)"Made with WRFTONALU on",date_str
+  info_records(2) = ""
+  info_records(3) = "" 
+  stat = nf_put_var_text(ofid, info_records_id, info_records)
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! eb_status 
+  stat = nf_put_var_int(ofid, eb_status_id, 1) ! CHANGE?
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! eb_prop1
+  stat = nf_put_var_int(ofid, eb_prop1_id, 101) ! CHANGE?
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! eb_names
+  stat = nf_put_var_text(ofid, eb_names_id, "block_101")
+  CALL ncderrcheck( __LINE__ ,stat ) 
+
+  
+  ! Close the file
+  stat = NF_CLOSE(ofid);
+  CALL ncderrcheck( __LINE__ ,stat )
+  
+  write(*,*)"Done reading Exodus"
 
   !================================================================================
   !
@@ -417,6 +751,10 @@ PROGRAM wrftonalu
         ENDIF
      ENDIF
   ENDDO
+
+  ! Nice final message of congratulations
+  write(*,*)'End program. Congratulations!'
+  
 END PROGRAM wrftonalu
 
 !--------------------------------------------------------------------------------

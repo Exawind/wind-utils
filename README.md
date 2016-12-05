@@ -4,7 +4,7 @@ This program converts WRF data to
 the [Nalu](https://github.com/NaluCFD/Nalu) (Exodus II) data
 format. Exodus II is part of [SEACAS](gsjaardema.github.io/seacas) and
 one can find other utilities to work with Exodus II files there. The
-objective is to provide Nalu with input WRF data at boundary
+objective is to provide Nalu with input WRF data as boundary
 conditions.
 
 This program was started as WRFTOOF, a WRF to OpenFoam converter,
