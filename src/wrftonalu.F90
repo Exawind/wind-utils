@@ -15,7 +15,8 @@
 
 PROGRAM wrftonalu
   USE module_dm
-  USE module_openfoam_bc
+  USE module_exodus_bc
+  USE module_utmdeg_converter
   IMPLICIT NONE
 
   !================================================================================
@@ -77,13 +78,23 @@ PROGRAM wrftonalu
 
   ! mine
 
+  integer, dimension(6) :: test_x = (/458731,  407653,  239027,  230253,  343898,  362850/)
+  integer, dimension(6) :: test_y = (/4462881, 5126290, 4163083, 3171843, 4302285, 2772478/)
+  character(len=4), dimension(6) :: test_utmzone = (/'30 T', '32 T', '11 S', '28 R', '15 S', '51 R'/)
+  real, dimension(6) :: test_lat, test_lon
+
+  
   integer,dimension(8) :: date_values
   character(12)  :: date_str
   CHARACTER(2) :: dd
   CHARACTER(2) :: mm
   CHARACTER(4) :: yyyy
 
+  ! Exodus mesh (lat,lon) offset
+  double precision :: exo_lat_offset, exo_lon_offset
+  
   character(len=255) :: meshname
+  character(len=255) :: ofname
   integer ncmeshid, ofid
   integer num_side_sets_id, num_side_sets
   integer len_string_dimid, len_line_dimid, four_dimid, num_info_dimid &
@@ -92,17 +103,18 @@ PROGRAM wrftonalu
        , num_nod_per_el1_dimid, num_nod_var_dimid
 
 
+  integer num_nodes
+  
   integer info_records_id
   integer info_records_dims(2)
-  character(len=255), dimension(3) :: info_records
-  integer :: info_records_start(2)
-  integer :: info_records_count(2)
+  character(len=255) :: info_records
 
   integer qa_records_id
   integer qa_records_dims(3)
 
   integer time_whole_id
   integer time_whole_dims
+  double precision :: time_whole(6)
 
   integer node_num_map_id
   integer node_num_map_dims
@@ -165,6 +177,7 @@ PROGRAM wrftonalu
   integer :: name_nod_var_start(2), name_nod_var_count(2)
 
 
+  real, dimension(:), allocatable :: exo_coordx, exo_coordy, exo_lat, exo_lon
   
   !================================================================================
   !
@@ -298,12 +311,27 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__,stat)
   stat = NF_GET_VARA_TEXT(ncid,varid,strt,cnt,Times) ! read in the Times data in the Times text
   CALL ncderrcheck( __LINE__,stat )
-  DO WHILE (.TRUE.) ! just replace : char by _ in the Times variable
+  DO WHILE (.TRUE.) ! just replace ':' char by '_' in the Times variable
      tmpstr = Times(it)
      i = INDEX(Times(it),':')
      IF ( i .EQ. 0 ) EXIT
      Times(it)(i:i) = '_'
   ENDDO
+  write(*,*)'Times 1',trim(Times(1))
+  write(*,*)'Times 2',trim(Times(2))
+  write(*,*)'Times 3',trim(Times(3))
+  write(*,*)'Times 4',trim(Times(4))
+  write(*,*)'Times 5',trim(Times(5))
+  write(*,*)'Times 6',trim(Times(6))
+  write(*,*)'Times 7',trim(Times(7))
+  write(*,*)'Times 8',trim(Times(8))
+  write(*,*)'Times 9',trim(Times(9))
+  write(*,*)'Times 10',trim(Times(10))
+  write(*,*)'Times 11',trim(Times(11))
+  write(*,*)'Times 12',trim(Times(12))
+  write(*,*)'Times 13',trim(Times(13))
+  write(*,*)'cnt',cnt(2)
+  
   
   ! Allocate a lot of variables
   ips = ids ; ipe = ide
@@ -388,251 +416,124 @@ PROGRAM wrftonalu
 
   !================================================================================
   !
-  ! Read the Exodus BC from the mesh and interpolate WRF data there
+  ! Read the Exodus mesh and interpolate WRF data there
   !
   !================================================================================
-  write(*,*)"Reading Exodus now"
+  write(*,*)"Reading Exodus mesh now"
 
-  ! open mesh file (needs to be netCDF format)
-  meshname = "ncmesh.nc"
-  WRITE(0,*)'opening mesh ',TRIM(meshname)
-  stat = NF_OPEN(meshname, NF_NOWRITE, ncmeshid)
+  ! Copy the mesh file to an output file
+  meshname = "front.g"
+  ofname = "front.nc"
+  comstr = "cp " // TRIM(meshname)//" "//TRIM(ofname)
+  CALL system (TRIM(comstr))
+
+  ! Open output file
+  WRITE(0,*)'opening output file ',TRIM(ofname)
+  stat = NF_OPEN(ofname, NF_WRITE, ofid)
   CALL ncderrcheck( __LINE__ ,stat )
 
-  ! Check to make sure there are 6 sides
-  stat = NF_INQ_DIMID(ncmeshid,"num_side_sets", num_side_sets_id)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = NF_INQ_DIMLEN(ncmeshid,num_side_sets_id, num_side_sets)
-  CALL ncderrcheck( __LINE__,stat)
-  if (num_side_sets .NE. 6) then
-     WRITE(0,*)"Error. Number of sides (=",num_side_sets,") is not equal to 6. Fix the mesh."
-     STOP 99
-  endif
-
   !================================================================================
-  !
-  ! Create the ouput Nalu files for each BC
-  !
-  !================================================================================
-  stat = NF_CREATE("front.nc", NF_CLOBBER, ofid);
+  ! Get mesh information
+  stat = NF_INQ_DIMID(ofid,"num_nodes", num_nodes_dimid)
+  CALL ncderrcheck( __LINE__,stat)
+  stat = NF_INQ_DIMLEN(ofid, num_nodes_dimid, num_nodes)
   CALL ncderrcheck( __LINE__,stat)
 
-  ! Write out some standard dimensions
-  stat = nf_def_dim(ofid, "len_string", 33 , len_string_dimid)
+  stat = NF_INQ_DIMID(ofid,"time_step", time_step_dimid)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "len_line", 81 , len_line_dimid)
+
+  stat = NF_INQ_DIMID(ofid,"len_name", len_name_dimid)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "four", 4 , four_dimid)
+
+  stat = NF_INQ_VARID(ofid,"info_records", info_records_id)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_info", 3 , num_info_dimid)
+
+  stat = NF_INQ_VARID(ofid,"eb_names", eb_names_id)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_qa_rec", 2 , num_qa_rec_dimid)
+
+  stat = NF_INQ_VARID(ofid,"time_whole", time_whole_id)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "len_name", 33 , len_name_dimid)
+
+  stat = NF_INQ_VARID(ofid,"coordx", coordx_id)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_dim", 3 , num_dim_dimid)
+
+  stat = NF_INQ_VARID(ofid,"coordy", coordy_id)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "time_step", NF_UNLIMITED , time_step_dimid) ! CHANGE
+
+  !================================================================================
+  ! Define new dimensions and variables
+
+  ! put in define mode
+  stat = NF_REDEF(ofid)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_nodes", 1681 , num_nodes_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_elem", 1600 , num_elem_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_el_blk", 1 , num_el_blk_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_el_in_blk1", 1600 , num_el_in_blk1_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "num_nod_per_el1", 4 , num_nod_per_el1_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
+  
+  ! Write out num_nod_var dimension
   stat = nf_def_dim(ofid, "num_nod_var", 7 , num_nod_var_dimid) ! CHANGE
   CALL ncderrcheck( __LINE__,stat)
-  
-  ! write some global attributes
-  stat = nf_put_att_text(ofid, nf_global, "api_version", 5, "6.36f") !CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_text(ofid, nf_global, "version", 5, "6.36f") !CHANGE
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_int(ofid, nf_global, "floating_point_word_size", nf_int, 1, 8)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_int(ofid, nf_global, "file_size", nf_int, 1, 1)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_int(ofid, nf_global, "maximum_name_length", nf_int, 1, 18)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_int(ofid, nf_global, "int64_status", nf_int, 1, 0)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_text(ofid, nf_global, "title", 1, "")
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! info_records variable
-  info_records_dims(1) = len_line_dimid
-  info_records_dims(2) = num_info_dimid
-  stat = nf_def_var(ofid, "info_records", nf_char, 2, info_records_dims , info_records_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! qa_records variable
-  qa_records_dims(1) = len_string_dimid
-  qa_records_dims(2) = four_dimid
-  qa_records_dims(3) = num_qa_rec_dimid
-  stat = nf_def_var(ofid, "qa_records", nf_char, 3, qa_records_dims , qa_records_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! time_whole variable
-  time_whole_dims = time_step_dimid
-  stat = nf_def_var(ofid, "time_whole", nf_double, 1, time_whole_dims , time_whole_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! node_num_map variable
-  node_num_map_dims = num_nodes_dimid
-  stat = nf_def_var(ofid, "node_num_map", nf_int, 1, node_num_map_dims , node_num_map_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! elem_num_map variable
-  elem_num_map_dims = num_elem_dimid
-  stat = nf_def_var(ofid, "elem_num_map", nf_int, 1, elem_num_map_dims , elem_num_map_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! eb_status variable
-  eb_status_dims = num_el_blk_dimid
-  stat = nf_def_var(ofid, "eb_status", nf_int, 1, eb_status_dims , eb_status_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! eb_prop1 variable
-  eb_prop1_dims = num_el_blk_dimid
-  stat = nf_def_var(ofid, "eb_prop1", nf_int, 1, eb_prop1_dims , eb_prop1_id)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_text(ofid, eb_prop1_id, "name", 2, "ID")
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! eb_names variable
-  eb_names_dims(1) = len_name_dimid
-  eb_names_dims(2) = num_el_blk_dimid
-  stat = nf_def_var(ofid, "eb_names", nf_char, 2, eb_names_dims , eb_names_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! coordx variable
-  coordx_dims = num_nodes_dimid
-  stat = nf_def_var(ofid, "coordx", nf_double, 1, coordx_dims , coordx_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! coordy variable
-  coordy_dims = num_nodes_dimid
-  stat = nf_def_var(ofid, "coordy", nf_double, 1, coordy_dims , coordy_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! coordz variable
-  coordz_dims = num_nodes_dimid
-  stat = nf_def_var(ofid, "coordz", nf_double, 1, coordz_dims , coordz_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! coor_names variable
-  coor_names_dims(1) = len_name_dimid
-  coor_names_dims(2) = num_dim_dimid
-  stat = nf_def_var(ofid, "coor_names", nf_char, 2, coor_names_dims , coor_names_id)
-  CALL ncderrcheck( __LINE__,stat)
-  
-  ! connect1 variable
-  connect1_dims(1) = num_nod_per_el1_dimid
-  connect1_dims(2) = num_el_in_blk1_dimid
-  stat = nf_def_var(ofid, "connect1", nf_int, 2, connect1_dims , connect1_id)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = nf_put_att_text(ofid, connect1_id, "elem_type", 6, "SHELL4")
-  CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var1 variable
   vals_nod_var1_dims(1) = num_nodes_dimid
   vals_nod_var1_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var1", nf_double, 2, vals_nod_var1_dims , vals_nod_var1_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var2 variable
   vals_nod_var2_dims(1) = num_nodes_dimid
   vals_nod_var2_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var2", nf_double, 2, vals_nod_var2_dims , vals_nod_var2_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var3 variable
   vals_nod_var3_dims(1) = num_nodes_dimid
   vals_nod_var3_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var3", nf_double, 2, vals_nod_var3_dims , vals_nod_var3_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var4 variable
   vals_nod_var4_dims(1) = num_nodes_dimid
   vals_nod_var4_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var4", nf_double, 2, vals_nod_var4_dims , vals_nod_var4_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var5 variable
   vals_nod_var5_dims(1) = num_nodes_dimid
   vals_nod_var5_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var5", nf_double, 2, vals_nod_var5_dims , vals_nod_var5_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var6 variable
   vals_nod_var6_dims(1) = num_nodes_dimid
   vals_nod_var6_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var6", nf_double, 2, vals_nod_var6_dims , vals_nod_var6_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! vals_nod_var7 variable
   vals_nod_var7_dims(1) = num_nodes_dimid
   vals_nod_var7_dims(2) = time_step_dimid
   stat = nf_def_var(ofid, "vals_nod_var7", nf_double, 2, vals_nod_var7_dims , vals_nod_var7_id)
   CALL ncderrcheck( __LINE__,stat)
-  
+
   ! name_nod_var variable
   name_nod_var_dims(1) = len_name_dimid
   name_nod_var_dims(2) = num_nod_var_dimid
   stat = nf_def_var(ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
   CALL ncderrcheck( __LINE__,stat)
-  
-  ! Close the file
-  stat = NF_CLOSE(ofid);
-  CALL ncderrcheck( __LINE__ ,stat )
 
+  !================================================================================
+  ! Fill in some of the variables
 
-  ! Open file in data mode to write out the variables
-  stat = NF_OPEN("front.nc", NF_WRITE, ofid);
+  ! put in data mode
+  stat = NF_ENDDEF(ofid)
   CALL ncderrcheck( __LINE__,stat)
 
   ! info_records variable
-  info_records(1) = "Made with WRFTONALU on"//date_str
-  info_records(2) = ""
-  info_records(3) = ""
-  info_records_start(1) = 1                              ! start at beginning of variable
-  info_records_start(2) = 1                              ! record number to write
-  info_records_count(1) = LEN(trim(info_records(1)))     ! number of chars to write
-  info_records_count(2) = 1                              ! only write one record
-  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(1))
-  CALL ncderrcheck( __LINE__ ,stat )
-  info_records_start(1) = 1
-  info_records_start(2) = 2
-  info_records_count(1) = LEN(trim(info_records(2)))
-  info_records_count(2) = 1
-  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(2))
-  CALL ncderrcheck( __LINE__ ,stat )
-  info_records_start(1) = 1
-  info_records_start(2) = 3
-  info_records_count(1) = LEN(trim(info_records(3)))
-  info_records_count(2) = 1
-  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(3))
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! eb_status 
-  stat = nf_put_var_int(ofid, eb_status_id, 1) ! CHANGE?
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! eb_prop1
-  stat = nf_put_var_int(ofid, eb_prop1_id, 101) ! CHANGE?
+  info_records = "Made with WRFTONALU on"//date_str
+  stat = nf_put_var_text(ofid, info_records_id, trim(info_records))
   CALL ncderrcheck( __LINE__ ,stat )
 
   ! eb_names
   eb_names =  "block_101"
   stat = nf_put_var_text(ofid, eb_names_id, trim(eb_names))
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! coor_names
-  stat = nf_put_vara_text(ofid, coor_names_id, coor_names_start, coor_names_count, coor_names)
   CALL ncderrcheck( __LINE__ ,stat )
 
   ! name_nod_var
@@ -686,151 +587,484 @@ PROGRAM wrftonalu
   stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(7))
   CALL ncderrcheck( __LINE__ ,stat )
 
+  !================================================================================
+  ! Read the mesh coordinates
+  stat = NF_INQ_VARID(ofid,"coordx",coordx_id)
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! Define an offset (lat,long) for the mesh 
+  exo_lat_offset = 33
+  exo_lon_offset = -101
+
+  ! Check to make sure it is within the WRF data set
+  if ( (exo_lat_offset .le. minval(xlat)) .or. &
+       (exo_lat_offset .ge. maxval(xlat)) .or. &
+       (exo_lon_offset .le. minval(xlong)) .or. &
+       (exo_lon_offset .ge. maxval(xlong)) ) then
+
+     write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
+     write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
+     write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
+     write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
+     stop 99
+
+  endif
+  
+  
+  ! Read in mesh coordx and coordy
+  allocate( exo_coordx(num_nodes))
+  allocate( exo_coordy(num_nodes))
+  allocate( exo_lat(num_nodes))
+  allocate( exo_lon(num_nodes))
+
+  stat = nf_get_var_real(ofid,coordx_id,exo_coordx)
+  CALL ncderrcheck( __LINE__ ,stat )
+  stat = nf_get_var_real(ofid,coordy_id,exo_coordy)
+  CALL ncderrcheck( __LINE__ ,stat )
+
+
+  
+  ! Transform these to xlat and xlong with the offset
+  call utm2deg(6,test_x,test_y,test_utmzone,test_lat,test_lon)
+  write(*,*)test_lat
+  write(*,*)test_lon
+
+  
+
+  
+  ! 3. for each (xlat,xlong) pair in the mesh, figure out the closest point in the WRF data set and save the (i,j) index of the WRF data set
+
+  
+  
+
+  
   ! Close the file
   stat = NF_CLOSE(ofid);
   CALL ncderrcheck( __LINE__ ,stat )
+
+  
+  ! !================================================================================
+  ! !
+  ! ! Create the ouput Nalu files for each BC
+  ! !
+  ! !================================================================================
+  ! stat = NF_CREATE("front.nc", NF_CLOBBER, ofid);
+  ! CALL ncderrcheck( __LINE__,stat)
+
+  ! ! Write out some standard dimensions
+  ! stat = nf_def_dim(ofid, "len_string", 33 , len_string_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "len_line", 81 , len_line_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "four", 4 , four_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_info", 3 , num_info_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_qa_rec", 2 , num_qa_rec_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "len_name", 33 , len_name_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_dim", 3 , num_dim_dimid)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "time_step", NF_UNLIMITED , time_step_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_nodes", 1681 , num_nodes_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_elem", 1600 , num_elem_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_el_blk", 1 , num_el_blk_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_el_in_blk1", 1600 , num_el_in_blk1_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_nod_per_el1", 4 , num_nod_per_el1_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_def_dim(ofid, "num_nod_var", 7 , num_nod_var_dimid) ! CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! write some global attributes
+  ! stat = nf_put_att_text(ofid, nf_global, "api_version", 5, "6.36f") !CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_text(ofid, nf_global, "version", 5, "6.36f") !CHANGE
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_int(ofid, nf_global, "floating_point_word_size", nf_int, 1, 8)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_int(ofid, nf_global, "file_size", nf_int, 1, 1)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_int(ofid, nf_global, "maximum_name_length", nf_int, 1, 18)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_int(ofid, nf_global, "int64_status", nf_int, 1, 0)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_text(ofid, nf_global, "title", 1, "")
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! info_records variable
+  ! info_records_dims(1) = len_line_dimid
+  ! info_records_dims(2) = num_info_dimid
+  ! stat = nf_def_var(ofid, "info_records", nf_char, 2, info_records_dims , info_records_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! qa_records variable
+  ! qa_records_dims(1) = len_string_dimid
+  ! qa_records_dims(2) = four_dimid
+  ! qa_records_dims(3) = num_qa_rec_dimid
+  ! stat = nf_def_var(ofid, "qa_records", nf_char, 3, qa_records_dims , qa_records_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! time_whole variable
+  ! time_whole_dims = time_step_dimid
+  ! stat = nf_def_var(ofid, "time_whole", nf_double, 1, time_whole_dims , time_whole_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! node_num_map variable
+  ! node_num_map_dims = num_nodes_dimid
+  ! stat = nf_def_var(ofid, "node_num_map", nf_int, 1, node_num_map_dims , node_num_map_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! elem_num_map variable
+  ! elem_num_map_dims = num_elem_dimid
+  ! stat = nf_def_var(ofid, "elem_num_map", nf_int, 1, elem_num_map_dims , elem_num_map_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! eb_status variable
+  ! eb_status_dims = num_el_blk_dimid
+  ! stat = nf_def_var(ofid, "eb_status", nf_int, 1, eb_status_dims , eb_status_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! eb_prop1 variable
+  ! eb_prop1_dims = num_el_blk_dimid
+  ! stat = nf_def_var(ofid, "eb_prop1", nf_int, 1, eb_prop1_dims , eb_prop1_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_text(ofid, eb_prop1_id, "name", 2, "ID")
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! eb_names variable
+  ! eb_names_dims(1) = len_name_dimid
+  ! eb_names_dims(2) = num_el_blk_dimid
+  ! stat = nf_def_var(ofid, "eb_names", nf_char, 2, eb_names_dims , eb_names_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! coordx variable
+  ! coordx_dims = num_nodes_dimid
+  ! stat = nf_def_var(ofid, "coordx", nf_double, 1, coordx_dims , coordx_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! coordy variable
+  ! coordy_dims = num_nodes_dimid
+  ! stat = nf_def_var(ofid, "coordy", nf_double, 1, coordy_dims , coordy_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! coordz variable
+  ! coordz_dims = num_nodes_dimid
+  ! stat = nf_def_var(ofid, "coordz", nf_double, 1, coordz_dims , coordz_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! coor_names variable
+  ! coor_names_dims(1) = len_name_dimid
+  ! coor_names_dims(2) = num_dim_dimid
+  ! stat = nf_def_var(ofid, "coor_names", nf_char, 2, coor_names_dims , coor_names_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! connect1 variable
+  ! connect1_dims(1) = num_nod_per_el1_dimid
+  ! connect1_dims(2) = num_el_in_blk1_dimid
+  ! stat = nf_def_var(ofid, "connect1", nf_int, 2, connect1_dims , connect1_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  ! stat = nf_put_att_text(ofid, connect1_id, "elem_type", 6, "SHELL4")
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var1 variable
+  ! vals_nod_var1_dims(1) = num_nodes_dimid
+  ! vals_nod_var1_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var1", nf_double, 2, vals_nod_var1_dims , vals_nod_var1_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var2 variable
+  ! vals_nod_var2_dims(1) = num_nodes_dimid
+  ! vals_nod_var2_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var2", nf_double, 2, vals_nod_var2_dims , vals_nod_var2_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var3 variable
+  ! vals_nod_var3_dims(1) = num_nodes_dimid
+  ! vals_nod_var3_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var3", nf_double, 2, vals_nod_var3_dims , vals_nod_var3_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var4 variable
+  ! vals_nod_var4_dims(1) = num_nodes_dimid
+  ! vals_nod_var4_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var4", nf_double, 2, vals_nod_var4_dims , vals_nod_var4_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var5 variable
+  ! vals_nod_var5_dims(1) = num_nodes_dimid
+  ! vals_nod_var5_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var5", nf_double, 2, vals_nod_var5_dims , vals_nod_var5_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var6 variable
+  ! vals_nod_var6_dims(1) = num_nodes_dimid
+  ! vals_nod_var6_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var6", nf_double, 2, vals_nod_var6_dims , vals_nod_var6_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! vals_nod_var7 variable
+  ! vals_nod_var7_dims(1) = num_nodes_dimid
+  ! vals_nod_var7_dims(2) = time_step_dimid
+  ! stat = nf_def_var(ofid, "vals_nod_var7", nf_double, 2, vals_nod_var7_dims , vals_nod_var7_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! name_nod_var variable
+  ! name_nod_var_dims(1) = len_name_dimid
+  ! name_nod_var_dims(2) = num_nod_var_dimid
+  ! stat = nf_def_var(ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
+  ! CALL ncderrcheck( __LINE__,stat)
+  
+  ! ! Close the file
+  ! stat = NF_CLOSE(ofid);
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+
+  ! ! Open file in data mode to write out the variables
+  ! stat = NF_OPEN("front.nc", NF_WRITE, ofid);
+  ! CALL ncderrcheck( __LINE__,stat)
+
+  ! ! info_records variable
+  ! info_records(1) = "Made with WRFTONALU on"//date_str
+  ! info_records(2) = ""
+  ! info_records(3) = ""
+  ! info_records_start(1) = 1                              ! start at beginning of variable
+  ! info_records_start(2) = 1                              ! record number to write
+  ! info_records_count(1) = LEN(trim(info_records(1)))     ! number of chars to write
+  ! info_records_count(2) = 1                              ! only write one record
+  ! stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(1))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! info_records_start(1) = 1
+  ! info_records_start(2) = 2
+  ! info_records_count(1) = LEN(trim(info_records(2)))
+  ! info_records_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(2))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! info_records_start(1) = 1
+  ! info_records_start(2) = 3
+  ! info_records_count(1) = LEN(trim(info_records(3)))
+  ! info_records_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(3))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! eb_status 
+  ! stat = nf_put_var_int(ofid, eb_status_id, 1) ! CHANGE?
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! eb_prop1
+  ! stat = nf_put_var_int(ofid, eb_prop1_id, 101) ! CHANGE?
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! eb_names
+  ! eb_names =  "block_101"
+  ! stat = nf_put_var_text(ofid, eb_names_id, trim(eb_names))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! coor_names
+  ! stat = nf_put_vara_text(ofid, coor_names_id, coor_names_start, coor_names_count, coor_names)
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! name_nod_var
+  ! name_nod_var(1) = 'cont_velocity_bc_x'
+  ! name_nod_var(2) = 'cont_velocity_bc_y'
+  ! name_nod_var(3) = 'cont_velocity_bc_z'
+  ! name_nod_var(4) = 'temperature_bc'
+  ! name_nod_var(5) = 'velocity_bc_x'
+  ! name_nod_var(6) = 'velocity_bc_y'
+  ! name_nod_var(7) = 'velocity_bc_z'  
+  ! name_nod_var_start(1) = 1                              ! start at beginning of variable
+  ! name_nod_var_start(2) = 1                              ! record number to write
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(1)))     ! number of chars to write
+  ! name_nod_var_count(2) = 1                              ! only write one record
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(1))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 2
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(2)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(2))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 3
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(3)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(3))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 4
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(4)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(4))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 5
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(5)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(5))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 6
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(6)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(6))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+  ! name_nod_var_start(1) = 1
+  ! name_nod_var_start(2) = 7
+  ! name_nod_var_count(1) = LEN(trim(name_nod_var(7)))
+  ! name_nod_var_count(2) = 1
+  ! stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(7))
+  ! CALL ncderrcheck( __LINE__ ,stat )
+
+  ! ! Close the file
+  ! stat = NF_CLOSE(ofid);
+  ! CALL ncderrcheck( __LINE__ ,stat )
   
   write(0,*)"Done reading Exodus"
 
-  !================================================================================
-  !
-  ! Read the OpenFoam BC files and interpolate WRF data there
-  !
-  !================================================================================
+  ! !================================================================================
+  ! !
+  ! ! Read the OpenFoam BC files and interpolate WRF data there
+  ! !
+  ! !================================================================================
 
-  DO ibdy = 1,nbdys
-     IF ( ibdy .EQ. INTERIOR .AND. .NOT. ic ) cycle ! short circuit if we do not want to generate interior file
-     IF ( ibdy .NE. INTERIOR ) THEN
-        CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'_bc.dat')
-     ELSE
-        CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'.dat')
-     ENDIF
-     IF ( ALLOCATED(bdy(ibdy)%point) ) THEN
-        CALL precompute_openfoam_points(ibdy,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
-        sec = sec_of_day(TRIM(Times(it)))
-        sec = sec - sec_start + sec_offset
-        ! create the time directory if it doesn't already exist
-        IF ( ibdy .NE. INTERIOR ) THEN
-           IF ( sec > 999999 ) THEN
-              WRITE(0,*)sec,' is too many seconds from start.'
-              WRITE(0,*)'Use -offset argument to make this a six digit number.'
-              CALL help
-              STOP 99
-           ENDIF
-           WRITE(secstr,'(I6.1)')sec
-           dirpath = TRIM(bdynames(ibdy))//"/"
-        ELSE
-           WRITE(secstr,'(I6.1)')sec
-           dirpath = ""
-        ENDIF
+  ! DO ibdy = 1,nbdys
+  !    IF ( ibdy .EQ. INTERIOR .AND. .NOT. ic ) cycle ! short circuit if we do not want to generate interior file
+  !    IF ( ibdy .NE. INTERIOR ) THEN
+  !       CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'_bc.dat')
+  !    ELSE
+  !       CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'.dat')
+  !    ENDIF
+  !    IF ( ALLOCATED(bdy(ibdy)%point) ) THEN
+  !       CALL precompute_openfoam_points(ibdy,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
+  !       sec = sec_of_day(TRIM(Times(it)))
+  !       sec = sec - sec_start + sec_offset
+  !       ! create the time directory if it doesn't already exist
+  !       IF ( ibdy .NE. INTERIOR ) THEN
+  !          IF ( sec > 999999 ) THEN
+  !             WRITE(0,*)sec,' is too many seconds from start.'
+  !             WRITE(0,*)'Use -offset argument to make this a six digit number.'
+  !             CALL help
+  !             STOP 99
+  !          ENDIF
+  !          WRITE(secstr,'(I6.1)')sec
+  !          dirpath = TRIM(bdynames(ibdy))//"/"
+  !       ELSE
+  !          WRITE(secstr,'(I6.1)')sec
+  !          dirpath = ""
+  !       ENDIF
 
-        comstr = "mkdir -p " // TRIM(dirpath)//TRIM(ADJUSTL(secstr))
-        CALL system (TRIM(comstr))
+  !       comstr = "mkdir -p " // TRIM(dirpath)//TRIM(ADJUSTL(secstr))
+  !       CALL system (TRIM(comstr))
 
-        ! Write the header of the OpenFoam files
-        outnameT = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/T"
-        OPEN( 76 , file=TRIM(outnameT), form="formatted" )
-        CALL write_header_scalar( 76, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "T" )
+  !       ! Write the header of the OpenFoam files
+  !       outnameT = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/T"
+  !       OPEN( 76 , file=TRIM(outnameT), form="formatted" )
+  !       CALL write_header_scalar( 76, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "T" )
 
-        outnamePd = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/p_rgh"
-        OPEN( 77 , file=TRIM(outnamePd), form="formatted" )
-        CALL write_header_scalar( 77, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "p_rgh" )
+  !       outnamePd = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/p_rgh"
+  !       OPEN( 77 , file=TRIM(outnamePd), form="formatted" )
+  !       CALL write_header_scalar( 77, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "p_rgh" )
 
-        outnameU = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/U"
-        OPEN( 78 , file=TRIM(outnameU), form="formatted" )
-        CALL write_header_vector( 78, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "U" )
+  !       outnameU = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/U"
+  !       OPEN( 78 , file=TRIM(outnameU), form="formatted" )
+  !       CALL write_header_vector( 78, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "U" )
 
-        IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-           outnameHFX = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/qwall"
-           OPEN( 79 , file=TRIM(outnameHFX), form="formatted" )
-           CALL write_header_vector( 79, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "qwall" )
-        ENDIF
+  !       IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
+  !          outnameHFX = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/qwall"
+  !          OPEN( 79 , file=TRIM(outnameHFX), form="formatted" )
+  !          CALL write_header_vector( 79, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "qwall" )
+  !       ENDIF
 
-        ! Linking WRF and OpenFoam data
-        DO ipoint = 1,bdy(ibdy)%npoints
-           of_lat = bdy(ibdy)%point(ipoint)%lat
-           of_lon = bdy(ibdy)%point(ipoint)%lon
-           of_lz = bdy(ibdy)%point(ipoint)%lz
-           j = bdy(ibdy)%point(ipoint)%j ! precomputed jcoord of cell center corresponding to lat
-           i = bdy(ibdy)%point(ipoint)%i ! precomputed icoord of cell center corresponding to lon
+  !       ! Linking WRF and OpenFoam data
+  !       DO ipoint = 1,bdy(ibdy)%npoints
+  !          of_lat = bdy(ibdy)%point(ipoint)%lat
+  !          of_lon = bdy(ibdy)%point(ipoint)%lon
+  !          of_lz = bdy(ibdy)%point(ipoint)%lz
+  !          j = bdy(ibdy)%point(ipoint)%j ! precomputed jcoord of cell center corresponding to lat
+  !          i = bdy(ibdy)%point(ipoint)%i ! precomputed icoord of cell center corresponding to lon
 
-           DO kk = 1,size(zz,3)
-              DO jj = 0,1
-                 DO ii = 0,1
-                    zzcol(ii,jj,kk)=zz(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! zz is full height at cell centers
-                    IF ( kk .LE. kpe-1 ) THEN
-                       zcol (ii,jj,kk)= z(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! z is half height at cell centers
-                    ENDIF
-                 ENDDO
-              ENDDO
-           ENDDO
+  !          DO kk = 1,size(zz,3)
+  !             DO jj = 0,1
+  !                DO ii = 0,1
+  !                   zzcol(ii,jj,kk)=zz(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! zz is full height at cell centers
+  !                   IF ( kk .LE. kpe-1 ) THEN
+  !                      zcol (ii,jj,kk)= z(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! z is half height at cell centers
+  !                   ENDIF
+  !                ENDDO
+  !             ENDDO
+  !          ENDDO
 
-           ! find the level index of the openfoam point in WRF, both in the full-level
-           ! and half-level ranges. Lowest index is closest to surface. Also store the
-           ! indices for the 3 neighbors to the north, east, and northeast, since these
-           ! are needed for horizontally interpolating in the finterp function
-           DO jj = 0,1
-              DO ii = 0,1
-                 IF (zzcol(ii,jj,1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,1))THEN ! special case, of_lz is below first half-level
-                    kzz(ii,jj) = 1 ! ignore other special case since open foam wont go that high
-                    kz(ii,jj) = 0
-                 ELSE
-                    DO k = kps+1,kpe
-                       IF (zzcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zzcol(ii,jj,k)) kzz(ii,jj) = k-1 ! full level
-                       IF (k.LT.kpe) THEN
-                          IF (zcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,k)) kz(ii,jj) = k-1 ! half level
-                       ENDIF
-                    ENDDO
-                 ENDIF
-              ENDDO
-           ENDDO
+  !          ! find the level index of the openfoam point in WRF, both in the full-level
+  !          ! and half-level ranges. Lowest index is closest to surface. Also store the
+  !          ! indices for the 3 neighbors to the north, east, and northeast, since these
+  !          ! are needed for horizontally interpolating in the finterp function
+  !          DO jj = 0,1
+  !             DO ii = 0,1
+  !                IF (zzcol(ii,jj,1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,1))THEN ! special case, of_lz is below first half-level
+  !                   kzz(ii,jj) = 1 ! ignore other special case since open foam wont go that high
+  !                   kz(ii,jj) = 0
+  !                ELSE
+  !                   DO k = kps+1,kpe
+  !                      IF (zzcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zzcol(ii,jj,k)) kzz(ii,jj) = k-1 ! full level
+  !                      IF (k.LT.kpe) THEN
+  !                         IF (zcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,k)) kz(ii,jj) = k-1 ! half level
+  !                      ENDIF
+  !                   ENDDO
+  !                ENDIF
+  !             ENDDO
+  !          ENDDO
 
-           !variables on half-levels open foam coords dims of field dims of lat lon arrays
-           u_new = finterp(u ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-           v_new = finterp(v ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-           t_new = finterp(t ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-           pres_new = finterp(pres,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+  !          !variables on half-levels open foam coords dims of field dims of lat lon arrays
+  !          u_new = finterp(u ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+  !          v_new = finterp(v ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+  !          t_new = finterp(t ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+  !          pres_new = finterp(pres,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
 
-           !variables on full-levels open foam coords dims of field dims of lat lon arrays
-           w_new = finterp(w ,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
-           t_ground = t(i,j,1)
-           ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
-           ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
-           ! surface as rho0 = p0 / (R*T0), where R is 286.9 and T0 is surface temp. Substituting for rho
-           ! into the above, this becomes:
-           pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * of_lz
-           IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-              kzz = 0 ! turn off vertical interpolation in call to finterp
-              hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
-              rho0 = pres(i,j,1) / ( R_D * t_ground )
-              hfx_new = -( hfx_new / ( rho0 * CP ) )
-           ENDIF
-           WRITE(76,*) t_new
-           WRITE(77,*) pd
-           ! note that positive theta angle (computed above) implies WRF grid is rotated counterclockwise w.r.t. true
-           ! see http://en.wikipedia.org/wiki/Rotation_matrix
-           WRITE(78,'("(",f12.7," ",f12.7," ",f12.7,")")')u_new*costheta-v_new*sintheta,u_new*sintheta+v_new*costheta,w_new
-           IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-              WRITE(79,'("(",f12.7," ",f12.7," ",f12.7,")")')0., 0., hfx_new
-           ENDIF
-        ENDDO
-        ! close the unit and then run a system command to strip off the first space that Fortran insists on writing
-        CALL write_trailer_T(76,ibdy.EQ.INTERIOR) ; CLOSE( 76 ) ;
-        comstr = "sed 's/^ //' "//TRIM(outnameT) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameT)
-        CALL system(TRIM(comstr))
-        CALL write_trailer_pd(77,ibdy.EQ.INTERIOR) ; CLOSE( 77 ) ;
-        comstr = "sed 's/^ //' "//TRIM(outnamePd) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnamePd)
-        CALL system(TRIM(comstr))
-        CALL write_trailer_U(78,ibdy.EQ.INTERIOR) ; CLOSE( 78 ) ;
-        comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
-        CALL system(TRIM(comstr))
-        IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-           CALL write_trailer_HFX(79,.FALSE.) ; CLOSE( 79 ) ;
-           comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
-           CALL system(TRIM(comstr))
-        ENDIF
-     ENDIF
-  ENDDO
+  !          !variables on full-levels open foam coords dims of field dims of lat lon arrays
+  !          w_new = finterp(w ,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
+  !          t_ground = t(i,j,1)
+  !          ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
+  !          ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
+  !          ! surface as rho0 = p0 / (R*T0), where R is 286.9 and T0 is surface temp. Substituting for rho
+  !          ! into the above, this becomes:
+  !          pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * of_lz
+  !          IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
+  !             kzz = 0 ! turn off vertical interpolation in call to finterp
+  !             hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
+  !             rho0 = pres(i,j,1) / ( R_D * t_ground )
+  !             hfx_new = -( hfx_new / ( rho0 * CP ) )
+  !          ENDIF
+  !          WRITE(76,*) t_new
+  !          WRITE(77,*) pd
+  !          ! note that positive theta angle (computed above) implies WRF grid is rotated counterclockwise w.r.t. true
+  !          ! see http://en.wikipedia.org/wiki/Rotation_matrix
+  !          WRITE(78,'("(",f12.7," ",f12.7," ",f12.7,")")')u_new*costheta-v_new*sintheta,u_new*sintheta+v_new*costheta,w_new
+  !          IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
+  !             WRITE(79,'("(",f12.7," ",f12.7," ",f12.7,")")')0., 0., hfx_new
+  !          ENDIF
+  !       ENDDO
+  !       ! close the unit and then run a system command to strip off the first space that Fortran insists on writing
+  !       CALL write_trailer_T(76,ibdy.EQ.INTERIOR) ; CLOSE( 76 ) ;
+  !       comstr = "sed 's/^ //' "//TRIM(outnameT) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameT)
+  !       CALL system(TRIM(comstr))
+  !       CALL write_trailer_pd(77,ibdy.EQ.INTERIOR) ; CLOSE( 77 ) ;
+  !       comstr = "sed 's/^ //' "//TRIM(outnamePd) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnamePd)
+  !       CALL system(TRIM(comstr))
+  !       CALL write_trailer_U(78,ibdy.EQ.INTERIOR) ; CLOSE( 78 ) ;
+  !       comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
+  !       CALL system(TRIM(comstr))
+  !       IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
+  !          CALL write_trailer_HFX(79,.FALSE.) ; CLOSE( 79 ) ;
+  !          comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
+  !          CALL system(TRIM(comstr))
+  !       ENDIF
+  !    ENDIF
+  ! ENDDO
 
   ! Nice final message of congratulations
   write(*,*)'End program. Congratulations!'
