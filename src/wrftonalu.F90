@@ -94,7 +94,9 @@ PROGRAM wrftonalu
 
   integer info_records_id
   integer info_records_dims(2)
-  character(255) info_records(3)
+  character(len=255), dimension(3) :: info_records
+  integer :: info_records_start(2)
+  integer :: info_records_count(2)
 
   integer qa_records_id
   integer qa_records_dims(3)
@@ -116,7 +118,8 @@ PROGRAM wrftonalu
 
   integer eb_names_id
   integer eb_names_dims(2)
-
+  character(len=255) :: eb_names
+  
   integer coordx_id
   integer coordx_dims(2)
 
@@ -128,7 +131,10 @@ PROGRAM wrftonalu
 
   integer coor_names_id
   integer coor_names_dims(2)
-
+  character(len=1), dimension(3) :: coor_names = (/'x', 'y', 'z'/)
+  integer :: coor_names_start(2) = (/1,1/)
+  integer :: coor_names_count(2) = (/1,3/)
+  
   integer connect1_id
   integer connect1_dims(2)
 
@@ -155,7 +161,10 @@ PROGRAM wrftonalu
 
   integer name_nod_var_id
   integer name_nod_var_dims(2)
-  
+  character(len=33), dimension(7) :: name_nod_var
+  integer :: name_nod_var_start(2), name_nod_var_count(2)
+
+
   
   !================================================================================
   !
@@ -423,7 +432,7 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__,stat)
   stat = nf_def_dim(ofid, "num_dim", 3 , num_dim_dimid)
   CALL ncderrcheck( __LINE__,stat)
-  stat = nf_def_dim(ofid, "time_step", NF_UNLIMITED , time_step_dimid)
+  stat = nf_def_dim(ofid, "time_step", NF_UNLIMITED , time_step_dimid) ! CHANGE
   CALL ncderrcheck( __LINE__,stat)
   stat = nf_def_dim(ofid, "num_nodes", 1681 , num_nodes_dimid) ! CHANGE
   CALL ncderrcheck( __LINE__,stat)
@@ -587,10 +596,26 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__,stat)
 
   ! info_records variable
-  write(info_records(1),*)"Made with WRFTONALU on",date_str
+  info_records(1) = "Made with WRFTONALU on"//date_str
   info_records(2) = ""
-  info_records(3) = "" 
-  stat = nf_put_var_text(ofid, info_records_id, info_records)
+  info_records(3) = ""
+  info_records_start(1) = 1                              ! start at beginning of variable
+  info_records_start(2) = 1                              ! record number to write
+  info_records_count(1) = LEN(trim(info_records(1)))     ! number of chars to write
+  info_records_count(2) = 1                              ! only write one record
+  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(1))
+  CALL ncderrcheck( __LINE__ ,stat )
+  info_records_start(1) = 1
+  info_records_start(2) = 2
+  info_records_count(1) = LEN(trim(info_records(2)))
+  info_records_count(2) = 1
+  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(2))
+  CALL ncderrcheck( __LINE__ ,stat )
+  info_records_start(1) = 1
+  info_records_start(2) = 3
+  info_records_count(1) = LEN(trim(info_records(3)))
+  info_records_count(2) = 1
+  stat = nf_put_vara_text(ofid, info_records_id, info_records_start, info_records_count, info_records(3))
   CALL ncderrcheck( __LINE__ ,stat )
 
   ! eb_status 
@@ -602,15 +627,70 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__ ,stat )
 
   ! eb_names
-  stat = nf_put_var_text(ofid, eb_names_id, "block_101")
-  CALL ncderrcheck( __LINE__ ,stat ) 
+  eb_names =  "block_101"
+  stat = nf_put_var_text(ofid, eb_names_id, trim(eb_names))
+  CALL ncderrcheck( __LINE__ ,stat )
 
-  
+  ! coor_names
+  stat = nf_put_vara_text(ofid, coor_names_id, coor_names_start, coor_names_count, coor_names)
+  CALL ncderrcheck( __LINE__ ,stat )
+
+  ! name_nod_var
+  name_nod_var(1) = 'cont_velocity_bc_x'
+  name_nod_var(2) = 'cont_velocity_bc_y'
+  name_nod_var(3) = 'cont_velocity_bc_z'
+  name_nod_var(4) = 'temperature_bc'
+  name_nod_var(5) = 'velocity_bc_x'
+  name_nod_var(6) = 'velocity_bc_y'
+  name_nod_var(7) = 'velocity_bc_z'  
+  name_nod_var_start(1) = 1                              ! start at beginning of variable
+  name_nod_var_start(2) = 1                              ! record number to write
+  name_nod_var_count(1) = LEN(trim(name_nod_var(1)))     ! number of chars to write
+  name_nod_var_count(2) = 1                              ! only write one record
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(1))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 2
+  name_nod_var_count(1) = LEN(trim(name_nod_var(2)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(2))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 3
+  name_nod_var_count(1) = LEN(trim(name_nod_var(3)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(3))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 4
+  name_nod_var_count(1) = LEN(trim(name_nod_var(4)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(4))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 5
+  name_nod_var_count(1) = LEN(trim(name_nod_var(5)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(5))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 6
+  name_nod_var_count(1) = LEN(trim(name_nod_var(6)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(6))
+  CALL ncderrcheck( __LINE__ ,stat )
+  name_nod_var_start(1) = 1
+  name_nod_var_start(2) = 7
+  name_nod_var_count(1) = LEN(trim(name_nod_var(7)))
+  name_nod_var_count(2) = 1
+  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(7))
+  CALL ncderrcheck( __LINE__ ,stat )
+
   ! Close the file
   stat = NF_CLOSE(ofid);
   CALL ncderrcheck( __LINE__ ,stat )
   
-  write(*,*)"Done reading Exodus"
+  write(0,*)"Done reading Exodus"
 
   !================================================================================
   !
