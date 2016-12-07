@@ -14,6 +14,7 @@
 !------------------------------------------------------------------------------
 
 PROGRAM wrftonalu
+  USE module_constants
   USE module_dm
   USE module_exodus_bc
   USE module_utmdeg_converter
@@ -69,21 +70,14 @@ PROGRAM wrftonalu
   INTEGER :: ids_check , ide_check , jds_check , jde_check , kds_check , kde_check
   INTEGER :: i , j , k
   INTEGER :: ii, jj, kk
-
-  ! borrowed from NCL for computing T from Theta
-  DOUBLE PRECISION PI
+  
+  ! borrowed from NCLS for computing T from Theta
   DOUBLE PRECISION P1000MB,R_D,CP, RHO0
   PARAMETER (P1000MB=100000.D0,R_D=266.9D0,CP=7.D0*R_D/2.D0)
 
 
   ! mine
 
-  integer, dimension(6) :: test_x = (/458731,  407653,  239027,  230253,  343898,  362850/)
-  integer, dimension(6) :: test_y = (/4462881, 5126290, 4163083, 3171843, 4302285, 2772478/)
-  character(len=4), dimension(6) :: test_utmzone = (/'30 T', '32 T', '11 S', '28 R', '15 S', '51 R'/)
-  real, dimension(6) :: test_lat, test_lon
-
-  
   integer,dimension(8) :: date_values
   character(12)  :: date_str
   CHARACTER(2) :: dd
@@ -625,9 +619,6 @@ PROGRAM wrftonalu
 
   
   ! Transform these to xlat and xlong with the offset
-  call utm2deg(6,test_x,test_y,test_utmzone,test_lat,test_lon)
-  write(*,*)test_lat
-  write(*,*)test_lon
 
   
 
