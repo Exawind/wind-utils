@@ -17,7 +17,7 @@
 module module_exodus
   use module_dm
   use module_ncderrcheck
-  !use module_utmdeg_converter
+  use module_utmdeg_converter
   implicit none
 
   type bdy_t

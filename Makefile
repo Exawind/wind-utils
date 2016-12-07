@@ -1,14 +1,5 @@
 #================================================================================
 #
-# Configuration
-#
-#================================================================================
-SRCDIR             := src
-BINDIR             := bin
-TARGET             := wrftonalu
-
-#================================================================================
-#
 # COMPILER SPECIFIC SETTINGS
 #
 #================================================================================
@@ -39,54 +30,50 @@ NETCDFPATH         :=    /nopt/nrel/apps/netcdf/dist/netcdf
 #
 #================================================================================
 LD                 := $(FC)
-FCFLAGS            := -g -C
 FCFLAGS            := -O3 -g
 LDFLAGS            := -lnetcdf
 INCLUDES           := -I$(NETCDFPATH)/include
 LIBS               := -L$(NETCDFPATH)/lib $(LIB)
-
-# Make sure the mod files go in the oject directory
-ifeq ($(FC),ifort)
-  MODULE_OUTPUT_FLAG := -module
-else ifeq ($(FC),gfortran)
-  MODULE_OUTPUT_FLAG := -J
-endif
 
 #================================================================================
 #
 # BUILD
 #
 #================================================================================
+BINNAME            := wrftonalu
 
-# Path where objects and dependencies will be put
-ODIR?=objects
+build : $(BINNAME)
 
-# files to compile
-srcf90:=$(subst ./,,$(basename $(wildcard $(SRCDIR)/*.F90)))
-objs:=$(foreach file,$(srcf90),$(ODIR)/$(file).o)
+module_dm.o : module_dm.F90
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
 
-all: $(BINDIR)/$(TARGET)
+module_constants.o : module_constants.F90
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
 
-$(ODIR)/%.o : %.F90
-	@mkdir -p $(@D)
-	@echo "Compilation of $< "
-	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $< $(MODULE_OUTPUT_FLAG) $(@D)
+module_str2int.o : module_str2int.F90
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
 
-$(BINDIR)/$(TARGET) : $(objs)
-	@echo "Link of $@"
-	@mkdir -p $(@D)
-	$(LD) -o $@ $(FCFLAGS) $(objs) $(LIBS) $(LDFLAGS) 
-	@echo "Successful compilation"
+module_ncderrcheck.o : module_ncderrcheck.F90
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
+
+module_utmdeg_converter.o : module_utmdeg_converter.F90 module_str2int.o module_constants.o
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
+
+module_exodus.o : module_exodus.F90 module_dm.o module_ncderrcheck.o module_utmdeg_converter.o
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
+
+wrftonalu.o : wrftonalu.F90 module_dm.o module_constants.o module_ncderrcheck.o module_exodus.o
+	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
+
+$(BINNAME) : module_dm.o module_constants.o module_str2int.o module_ncderrcheck.o module_utmdeg_converter.o module_exodus.o wrftonalu.o 
+	$(LD) -o $@ $^ $(LIBS) $(LDFLAGS) $(LIB)
 
 doc : 
 	@echo "Generating documentation with Doxygen."
 	doxygen Doxyfile
 
 clean :
-	@echo "Clean of $(ODIR), doc, and $(BINDIR)"
-	@-rm -rf $(ODIR) $(BINDIR) doc
+	@echo "Clean of objects, modules, doc, and executable"
+	@-rm -rf *.o *.mod doc $(BINNAME)
 
-cleanall :
-	@-rm -rv $(ODIR) $(BINDIR) doc
-
-.PHONY : clean cleanall all doc
+.PHONY : clean build doc
