@@ -6,7 +6,7 @@
 !> Marc T. Henry de Frahan, National Renewable Energy Laboratory
 !
 !> @brief
-!> Convert arrays of UTM coordinates into Lat/Lon arrays (and vice-versa)
+!> Convert arrays of UTM (WGS84) coordinates into Lat/Lon arrays (and vice-versa)
 !
 !> @details
 
@@ -239,6 +239,7 @@ CONTAINS
     do i = 1, n
        write(utmzone(i),'(I2,A2)')zonenum(i),zonestr(i)
     enddo
+    ! could replace that loop with utmzone(1:n) = CHAR(zonenum(1:n)) // zonestr(1:n)
     
   END SUBROUTINE deg2utm
   

@@ -85,7 +85,9 @@ PROGRAM wrftonalu
   CHARACTER(4) :: yyyy
 
   ! Exodus mesh (lat,lon) offset
-  double precision :: exo_lat_offset, exo_lon_offset
+  real :: exo_lat_offset(1), exo_lon_offset(1)
+  integer :: exo_utmx_offset(1), exo_utmy_offset(1)
+  character(4) :: exo_utmzone_offset(1)
   
   character(len=255) :: meshname
   character(len=255) :: ofname
@@ -172,6 +174,7 @@ PROGRAM wrftonalu
 
 
   real, dimension(:), allocatable :: exo_coordx, exo_coordy, exo_lat, exo_lon
+  character(4),dimension(:), allocatable :: exo_utmzone
   
   !================================================================================
   !
@@ -586,15 +589,17 @@ PROGRAM wrftonalu
   stat = NF_INQ_VARID(ofid,"coordx",coordx_id)
   CALL ncderrcheck( __LINE__ ,stat )
 
-  ! Define an offset (lat,long) for the mesh 
-  exo_lat_offset = 33
-  exo_lon_offset = -101
-
+  ! Define an offset (lat,long) for the mesh
+  ! get the UTM coordinates too
+  exo_lat_offset(1) = 33
+  exo_lon_offset(1) = -101
+  call deg2utm(1,exo_lat_offset,exo_lon_offset, exo_utmx_offset, exo_utmy_offset, exo_utmzone_offset)
+  
   ! Check to make sure it is within the WRF data set
-  if ( (exo_lat_offset .le. minval(xlat)) .or. &
-       (exo_lat_offset .ge. maxval(xlat)) .or. &
-       (exo_lon_offset .le. minval(xlong)) .or. &
-       (exo_lon_offset .ge. maxval(xlong)) ) then
+  if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
+       (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
+       (exo_lon_offset(1) .le. minval(xlong)) .or. &
+       (exo_lon_offset(1) .ge. maxval(xlong)) ) then
 
      write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
      write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
@@ -604,10 +609,10 @@ PROGRAM wrftonalu
 
   endif
   
-  
   ! Read in mesh coordx and coordy
   allocate( exo_coordx(num_nodes))
   allocate( exo_coordy(num_nodes))
+  allocate( exo_utmzone(num_nodes))
   allocate( exo_lat(num_nodes))
   allocate( exo_lon(num_nodes))
 
@@ -615,12 +620,12 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__ ,stat )
   stat = nf_get_var_real(ofid,coordy_id,exo_coordy)
   CALL ncderrcheck( __LINE__ ,stat )
-
-
   
   ! Transform these to xlat and xlong with the offset
-
-  
+  exo_coordx(:) = exo_coordx(:) + exo_utmx_offset(1)
+  exo_coordy(:) = exo_coordy(:) + exo_utmy_offset(1)
+  exo_utmzone(:) = exo_utmzone_offset(1)
+  call utm2deg(num_nodes, nint(exo_coordx), nint(exo_coordy), exo_utmzone, exo_lat, exo_lon)
 
   
   ! 3. for each (xlat,xlong) pair in the mesh, figure out the closest point in the WRF data set and save the (i,j) index of the WRF data set
