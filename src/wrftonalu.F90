@@ -16,8 +16,8 @@
 PROGRAM wrftonalu
   USE module_constants
   USE module_dm
-  USE module_exodus_bc
-  USE module_utmdeg_converter
+  USE module_ncderrcheck
+  USE module_exodus
   IMPLICIT NONE
 
   !================================================================================
@@ -78,114 +78,96 @@ PROGRAM wrftonalu
 
   ! mine
 
-  integer,dimension(8) :: date_values
-  character(12)  :: date_str
-  CHARACTER(2) :: dd
-  CHARACTER(2) :: mm
-  CHARACTER(4) :: yyyy
 
   ! Exodus mesh (lat,lon) offset
   real :: exo_lat_offset(1), exo_lon_offset(1)
-  integer :: exo_utmx_offset(1), exo_utmy_offset(1)
-  character(4) :: exo_utmzone_offset(1)
-  
+
   character(len=255) :: meshname
   character(len=255) :: ofname
-  integer ncmeshid, ofid
-  integer num_side_sets_id, num_side_sets
-  integer len_string_dimid, len_line_dimid, four_dimid, num_info_dimid &
-       , num_qa_rec_dimid, len_name_dimid, num_dim_dimid, time_step_dimid &
-       , num_nodes_dimid, num_elem_dimid, num_el_blk_dimid, num_el_in_blk1_dimid &
-       , num_nod_per_el1_dimid, num_nod_var_dimid
+
+  ! integer ncmeshid, ofid
+  ! integer num_side_sets_id, num_side_sets
+  ! integer len_string_dimid, len_line_dimid, four_dimid, num_info_dimid &
+  !      , num_qa_rec_dimid, len_name_dimid, num_dim_dimid, time_step_dimid &
+  !      , num_nodes_dimid, num_elem_dimid, num_el_blk_dimid, num_el_in_blk1_dimid &
+  !      , num_nod_per_el1_dimid, num_nod_var_dimid
 
 
-  integer num_nodes
+  ! integer num_nodes
   
-  integer info_records_id
-  integer info_records_dims(2)
-  character(len=255) :: info_records
+  ! integer info_records_id
+  ! integer info_records_dims(2)
+  ! character(len=255) :: info_records
 
-  integer qa_records_id
-  integer qa_records_dims(3)
+  ! integer qa_records_id
+  ! integer qa_records_dims(3)
 
-  integer time_whole_id
-  integer time_whole_dims
-  double precision :: time_whole(6)
+  ! integer time_whole_id
+  ! integer time_whole_dims
+  ! double precision :: time_whole(6)
 
-  integer node_num_map_id
-  integer node_num_map_dims
+  ! integer node_num_map_id
+  ! integer node_num_map_dims
 
-  integer elem_num_map_id
-  integer elem_num_map_dims
+  ! integer elem_num_map_id
+  ! integer elem_num_map_dims
 
-  integer eb_status_id
-  integer eb_status_dims
+  ! integer eb_status_id
+  ! integer eb_status_dims
 
-  integer eb_prop1_id
-  integer eb_prop1_dims
+  ! integer eb_prop1_id
+  ! integer eb_prop1_dims
 
-  integer eb_names_id
-  integer eb_names_dims(2)
-  character(len=255) :: eb_names
+  ! integer eb_names_id
+  ! integer eb_names_dims(2)
+  ! character(len=255) :: eb_names
   
-  integer coordx_id
-  integer coordx_dims(2)
+  ! integer coordx_id
+  ! integer coordx_dims(2)
 
-  integer coordy_id
-  integer coordy_dims(2)
+  ! integer coordy_id
+  ! integer coordy_dims(2)
 
-  integer coordz_id
-  integer coordz_dims(2)
+  ! integer coordz_id
+  ! integer coordz_dims(2)
 
-  integer coor_names_id
-  integer coor_names_dims(2)
-  character(len=1), dimension(3) :: coor_names = (/'x', 'y', 'z'/)
-  integer :: coor_names_start(2) = (/1,1/)
-  integer :: coor_names_count(2) = (/1,3/)
+  ! integer coor_names_id
+  ! integer coor_names_dims(2)
+  ! character(len=1), dimension(3) :: coor_names = (/'x', 'y', 'z'/)
+  ! integer :: coor_names_start(2) = (/1,1/)
+  ! integer :: coor_names_count(2) = (/1,3/)
   
-  integer connect1_id
-  integer connect1_dims(2)
+  ! integer connect1_id
+  ! integer connect1_dims(2)
 
-  integer vals_nod_var1_id
-  integer vals_nod_var1_dims(2)
+  ! integer vals_nod_var1_id
+  ! integer vals_nod_var1_dims(2)
 
-  integer vals_nod_var2_id
-  integer vals_nod_var2_dims(2)
+  ! integer vals_nod_var2_id
+  ! integer vals_nod_var2_dims(2)
   
-  integer vals_nod_var3_id
-  integer vals_nod_var3_dims(2)
+  ! integer vals_nod_var3_id
+  ! integer vals_nod_var3_dims(2)
 
-  integer vals_nod_var4_id
-  integer vals_nod_var4_dims(2)
+  ! integer vals_nod_var4_id
+  ! integer vals_nod_var4_dims(2)
 
-  integer vals_nod_var5_id
-  integer vals_nod_var5_dims(2)
+  ! integer vals_nod_var5_id
+  ! integer vals_nod_var5_dims(2)
 
-  integer vals_nod_var6_id
-  integer vals_nod_var6_dims(2)
+  ! integer vals_nod_var6_id
+  ! integer vals_nod_var6_dims(2)
 
-  integer vals_nod_var7_id
-  integer vals_nod_var7_dims(2)
+  ! integer vals_nod_var7_id
+  ! integer vals_nod_var7_dims(2)
 
-  integer name_nod_var_id
-  integer name_nod_var_dims(2)
-  character(len=33), dimension(7) :: name_nod_var
-  integer :: name_nod_var_start(2), name_nod_var_count(2)
+  ! integer name_nod_var_id
+  ! integer name_nod_var_dims(2)
+  ! character(len=33), dimension(7) :: name_nod_var
+  ! integer :: name_nod_var_start(2), name_nod_var_count(2)
 
 
-  real, dimension(:), allocatable :: exo_coordx, exo_coordy, exo_lat, exo_lon
-  character(4),dimension(:), allocatable :: exo_utmzone
   
-  !================================================================================
-  !
-  ! Get system information
-  !
-  !================================================================================
-  call date_and_time(VALUES=date_values)
-  write(  dd,'(i2)') date_values(3)
-  write(  mm,'(i2)') date_values(2)
-  write(yyyy,'(i4)') date_values(1)
-  write(date_str,*),dd,'/',mm,'/',yyyy
 
   !================================================================================
   !
@@ -421,222 +403,94 @@ PROGRAM wrftonalu
   ! Copy the mesh file to an output file
   meshname = "front.g"
   ofname = "front.nc"
-  comstr = "cp " // TRIM(meshname)//" "//TRIM(ofname)
-  CALL system (TRIM(comstr))
+  comstr = "cp " // trim(meshname)//" "//trim(ofname)
+  CALL system (trim(comstr))
 
-  ! Open output file
-  WRITE(0,*)'opening output file ',TRIM(ofname)
-  stat = NF_OPEN(ofname, NF_WRITE, ofid)
-  CALL ncderrcheck( __LINE__ ,stat )
+  ! ! Prepare the output file
+  ! call prep_exodus(1,trim(ofname))
 
-  !================================================================================
-  ! Get mesh information
-  stat = NF_INQ_DIMID(ofid,"num_nodes", num_nodes_dimid)
-  CALL ncderrcheck( __LINE__,stat)
-  stat = NF_INQ_DIMLEN(ofid, num_nodes_dimid, num_nodes)
-  CALL ncderrcheck( __LINE__,stat)
+  ! ! Define an offset (lat,long) for the mesh
+  ! ! get the UTM coordinates too
+  ! exo_lat_offset(1) = 33
+  ! exo_lon_offset(1) = -101
+  ! ! Check to make sure it is within the WRF data set
+  ! if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
+  !      (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
+  !      (exo_lon_offset(1) .le. minval(xlong)) .or. &
+  !      (exo_lon_offset(1) .ge. maxval(xlong)) ) then
+     
+  !    write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
+  !    write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
+  !    write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
+  !    write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
+  !    stop 99
+     
+  ! endif
 
-  stat = NF_INQ_DIMID(ofid,"time_step", time_step_dimid)
-  CALL ncderrcheck( __LINE__,stat)
+  ! ! Read the mesh body
+  ! call read_exodus_bdy_coords( 1, exo_lat_offset, exo_lon_offset)
 
-  stat = NF_INQ_DIMID(ofid,"len_name", len_name_dimid)
-  CALL ncderrcheck( __LINE__,stat)
+  ! ! For each mesh (lat,lon), find the closest point in the WRF dataset
+  ! call relate_exodus_wrf( 1 ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
 
-  stat = NF_INQ_VARID(ofid,"info_records", info_records_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  stat = NF_INQ_VARID(ofid,"eb_names", eb_names_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  stat = NF_INQ_VARID(ofid,"time_whole", time_whole_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  stat = NF_INQ_VARID(ofid,"coordx", coordx_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  stat = NF_INQ_VARID(ofid,"coordy", coordy_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  !================================================================================
-  ! Define new dimensions and variables
-
-  ! put in define mode
-  stat = NF_REDEF(ofid)
-  CALL ncderrcheck( __LINE__,stat)
+  ! ! Close everything
+  ! call close_exodus(1)
   
-  ! Write out num_nod_var dimension
-  stat = nf_def_dim(ofid, "num_nod_var", 7 , num_nod_var_dimid) ! CHANGE
-  CALL ncderrcheck( __LINE__,stat)
 
-  ! vals_nod_var1 variable
-  vals_nod_var1_dims(1) = num_nodes_dimid
-  vals_nod_var1_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var1", nf_double, 2, vals_nod_var1_dims , vals_nod_var1_id)
-  CALL ncderrcheck( __LINE__,stat)
 
-  ! vals_nod_var2 variable
-  vals_nod_var2_dims(1) = num_nodes_dimid
-  vals_nod_var2_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var2", nf_double, 2, vals_nod_var2_dims , vals_nod_var2_id)
-  CALL ncderrcheck( __LINE__,stat)
 
-  ! vals_nod_var3 variable
-  vals_nod_var3_dims(1) = num_nodes_dimid
-  vals_nod_var3_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var3", nf_double, 2, vals_nod_var3_dims , vals_nod_var3_id)
-  CALL ncderrcheck( __LINE__,stat)
+  ! !================================================================================
+  ! 
+  ! allocate( exo_wrf_i(num_nodes))
+  ! allocate( exo_wrf_j(num_nodes))
 
-  ! vals_nod_var4 variable
-  vals_nod_var4_dims(1) = num_nodes_dimid
-  vals_nod_var4_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var4", nf_double, 2, vals_nod_var4_dims , vals_nod_var4_id)
-  CALL ncderrcheck( __LINE__,stat)
+  ! ! Loop on all the nodes
+  ! do ipoint = 1, num_nodes
+  !    ! loop on WRF data
+  !    dmin = 999999.9
+  !    do j = jps,min(jpe,jde-2)
+  !       do i = ips,min(ipe,ide-2)
+  !          ! ignore special case where of point lies outside the grid of cell centers
+  !          ! should not put EXO grid that close to a WRF boundary
+  !          ! also note the cavalier way we ignore curvature and assume the
+  !          ! grid cells are perfectly square and that lat and lon are Cartesian
+  !          dsw = sqrt((exo_lat(ipoint)-xlat(i ,j ))*(exo_lat(ipoint)-xlat(i ,j )) + (exo_lon(ipoint)-xlong(i ,j ))*(exo_lon(ipoint)-xlong(i ,j )))
+  !          !!absolute closest
+  !          !IF ( dsw .LT. dmin ) THEN
+  !          !alternate scheme, pick the point that is closest to the sw of the exodus point
+  !          if ( dsw .lt. dmin .and. exo_lat(ipoint) .ge. xlat(i,j) .and. exo_lon(ipoint) .ge. xlong(i,j) ) then
+  !             exo_wrf_i(ipoint) = i
+  !             exo_wrf_j(ipoint) = j
+  !             dmin = dsw
+  !          endif
+  !       enddo
+  !    enddo
+  ! enddo
 
-  ! vals_nod_var5 variable
-  vals_nod_var5_dims(1) = num_nodes_dimid
-  vals_nod_var5_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var5", nf_double, 2, vals_nod_var5_dims , vals_nod_var5_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  ! vals_nod_var6 variable
-  vals_nod_var6_dims(1) = num_nodes_dimid
-  vals_nod_var6_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var6", nf_double, 2, vals_nod_var6_dims , vals_nod_var6_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  ! vals_nod_var7 variable
-  vals_nod_var7_dims(1) = num_nodes_dimid
-  vals_nod_var7_dims(2) = time_step_dimid
-  stat = nf_def_var(ofid, "vals_nod_var7", nf_double, 2, vals_nod_var7_dims , vals_nod_var7_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  ! name_nod_var variable
-  name_nod_var_dims(1) = len_name_dimid
-  name_nod_var_dims(2) = num_nod_var_dimid
-  stat = nf_def_var(ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
-  CALL ncderrcheck( __LINE__,stat)
-
-  !================================================================================
-  ! Fill in some of the variables
-
-  ! put in data mode
-  stat = NF_ENDDEF(ofid)
-  CALL ncderrcheck( __LINE__,stat)
-
-  ! info_records variable
-  info_records = "Made with WRFTONALU on"//date_str
-  stat = nf_put_var_text(ofid, info_records_id, trim(info_records))
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! eb_names
-  eb_names =  "block_101"
-  stat = nf_put_var_text(ofid, eb_names_id, trim(eb_names))
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! name_nod_var
-  name_nod_var(1) = 'cont_velocity_bc_x'
-  name_nod_var(2) = 'cont_velocity_bc_y'
-  name_nod_var(3) = 'cont_velocity_bc_z'
-  name_nod_var(4) = 'temperature_bc'
-  name_nod_var(5) = 'velocity_bc_x'
-  name_nod_var(6) = 'velocity_bc_y'
-  name_nod_var(7) = 'velocity_bc_z'  
-  name_nod_var_start(1) = 1                              ! start at beginning of variable
-  name_nod_var_start(2) = 1                              ! record number to write
-  name_nod_var_count(1) = LEN(trim(name_nod_var(1)))     ! number of chars to write
-  name_nod_var_count(2) = 1                              ! only write one record
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(1))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 2
-  name_nod_var_count(1) = LEN(trim(name_nod_var(2)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(2))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 3
-  name_nod_var_count(1) = LEN(trim(name_nod_var(3)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(3))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 4
-  name_nod_var_count(1) = LEN(trim(name_nod_var(4)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(4))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 5
-  name_nod_var_count(1) = LEN(trim(name_nod_var(5)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(5))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 6
-  name_nod_var_count(1) = LEN(trim(name_nod_var(6)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(6))
-  CALL ncderrcheck( __LINE__ ,stat )
-  name_nod_var_start(1) = 1
-  name_nod_var_start(2) = 7
-  name_nod_var_count(1) = LEN(trim(name_nod_var(7)))
-  name_nod_var_count(2) = 1
-  stat = nf_put_vara_text(ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(7))
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  !================================================================================
-  ! Read the mesh coordinates
-  stat = NF_INQ_VARID(ofid,"coordx",coordx_id)
-  CALL ncderrcheck( __LINE__ ,stat )
-
-  ! Define an offset (lat,long) for the mesh
-  ! get the UTM coordinates too
-  exo_lat_offset(1) = 33
-  exo_lon_offset(1) = -101
-  call deg2utm(1,exo_lat_offset,exo_lon_offset, exo_utmx_offset, exo_utmy_offset, exo_utmzone_offset)
-  
-  ! Check to make sure it is within the WRF data set
-  if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
-       (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
-       (exo_lon_offset(1) .le. minval(xlong)) .or. &
-       (exo_lon_offset(1) .ge. maxval(xlong)) ) then
-
-     write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
-     write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
-     write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
-     write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
-     stop 99
-
-  endif
-  
-  ! Read in mesh coordx and coordy
-  allocate( exo_coordx(num_nodes))
-  allocate( exo_coordy(num_nodes))
-  allocate( exo_utmzone(num_nodes))
-  allocate( exo_lat(num_nodes))
-  allocate( exo_lon(num_nodes))
-
-  stat = nf_get_var_real(ofid,coordx_id,exo_coordx)
-  CALL ncderrcheck( __LINE__ ,stat )
-  stat = nf_get_var_real(ofid,coordy_id,exo_coordy)
-  CALL ncderrcheck( __LINE__ ,stat )
-  
-  ! Transform these to xlat and xlong with the offset
-  exo_coordx(:) = exo_coordx(:) + exo_utmx_offset(1)
-  exo_coordy(:) = exo_coordy(:) + exo_utmy_offset(1)
-  exo_utmzone(:) = exo_utmzone_offset(1)
-  call utm2deg(num_nodes, nint(exo_coordx), nint(exo_coordy), exo_utmzone, exo_lat, exo_lon)
-
-  
-  ! 3. for each (xlat,xlong) pair in the mesh, figure out the closest point in the WRF data set and save the (i,j) index of the WRF data set
-
-  
+  ! !================================================================================
+  ! ! For each mesh (lat,lon), find the closest point in the WRF dataset
+  ! sec = sec_of_day(TRIM(Times(it)))
+  ! sec = sec - sec_start + sec_offset
+  ! ! create the time directory if it doesn't already exist
+  ! IF ( ibdy .NE. INTERIOR ) THEN
+  !    IF ( sec > 999999 ) THEN
+  !       WRITE(0,*)sec,' is too many seconds from start.'
+  !       WRITE(0,*)'Use -offset argument to make this a six digit number.'
+  !       CALL help
+  !       STOP 99
+  !    ENDIF
+  !    WRITE(secstr,'(I6.1)')sec
+  !    dirpath = TRIM(bdynames(ibdy))//"/"
+  ! ELSE
+  !    WRITE(secstr,'(I6.1)')sec
+  !    dirpath = ""
+  ! ENDIF
   
 
   
-  ! Close the file
-  stat = NF_CLOSE(ofid);
-  CALL ncderrcheck( __LINE__ ,stat )
+  ! ! Close the file
+  ! stat = NF_CLOSE(ofid);
+  ! CALL ncderrcheck( __LINE__ ,stat )
 
   
   ! !================================================================================
@@ -920,7 +774,7 @@ PROGRAM wrftonalu
   ! stat = NF_CLOSE(ofid);
   ! CALL ncderrcheck( __LINE__ ,stat )
   
-  write(0,*)"Done reading Exodus"
+
 
   ! !================================================================================
   ! !
@@ -1152,24 +1006,6 @@ SUBROUTINE help
   WRITE(*,'("       -qwall      program should generate temp flux in lower bc file ",/)')
   STOP
 END SUBROUTINE help
-
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Check for netCDF function error
-!> @param lineno line number of error
-!> @param stat error status
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE ncderrcheck( lineno, stat )
-  IMPLICIT NONE
-  INCLUDE 'netcdf.inc'
-  INTEGER, INTENT(IN) :: lineno,stat
-  IF ( stat .NE. NF_NOERR ) THEN
-     WRITE(0,*)'Line ',lineno,NF_STRERROR(stat)
-     STOP 99
-  ENDIF
-END SUBROUTINE ncderrcheck
 
 
 !--------------------------------------------------------------------------------
