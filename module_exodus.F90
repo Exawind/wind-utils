@@ -93,11 +93,9 @@ contains
          vals_nod_var7_dims(2), &
          name_nod_var_id, name_nod_var_dims(2)
 
-    integer info_records_dims(2)
     character(len=255) :: info_records
     integer :: info_records_start(2), info_records_count(2)
 
-    integer eb_names_dims(2)
     character(len=255) :: eb_names
 
     character(len=33), dimension(7) :: name_nod_var

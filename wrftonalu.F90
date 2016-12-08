@@ -33,7 +33,7 @@ PROGRAM wrftonalu
   ! variables for using netcdf
   INCLUDE 'netcdf.inc'
   INTEGER, PARAMETER :: MAXFILES = 20
-  CHARACTER(LEN=255) :: flnm(MAXFILES),arg,outnameT,outnamePd,outnameU,outnameHFX,vname,comstr,dirpath
+  CHARACTER(LEN=255) :: flnm(MAXFILES),arg,vname,comstr
   CHARACTER(LEN=19) :: Times(100),tmpstr,secstr
   LOGICAL ic, ctrl, have_hfx, use_hfx ! whether or not to do an IC file too
   INTEGER it,ncid(MAXFILES),stat,iarg,narg,varid,strt(4),cnt(4),xtype,storeddim,dimids(4),natts
@@ -329,7 +329,7 @@ PROGRAM wrftonalu
   ibdy = 1
   
   ! Prepare the output file
-  call prep_exodus(ibdy, trim(ofname(1)), cnt(2), Times)
+  call prep_exodus(ibdy, trim(ofname(ibdy)), cnt(2), Times)
 
   ! Define an offset (lat,long) for the mesh
   if ( .not. coord_offset ) then

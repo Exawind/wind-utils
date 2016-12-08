@@ -73,7 +73,6 @@ CONTAINS
     real,         dimension(n), intent(out) :: lat, lon
 
     ! internal
-    integer :: i
     integer,          dimension(n) :: xc, yc, zonenum, stat
     logical,          dimension(n) :: mask
     character(1),     dimension(n) :: zonestr, hemis
