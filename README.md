@@ -27,4 +27,9 @@ make
 ./wrftonalu wrfout
 ```
 where `wrfout` is the WRF data file. This will generate Exodus
-boundary condition files for Nalu.
+boundary condition files for Nalu. The Exodus mesh files it needs to
+do this should be in the run directory and named `west.g`, `east.g`,
+`south.g`, `north.g`, `lower.g`, and `upper.g` (any, all or none of
+those files can exist). The ouput will be `west.nc`, `east.nc`,
+`south.nc`, `north.nc`, `lower.nc`, and `upper.nc` files containing
+the interpolated WRF data on the Exodus mesh for input into Nalu. 

@@ -75,18 +75,17 @@ PROGRAM wrftonalu
   PARAMETER (P1000MB=100000.D0,R_D=266.9D0,CP=7.D0*R_D/2.D0)
 
 
-  ! mine
-
-
   ! Exodus mesh (lat,lon) offset
   logical :: coord_offset
   real :: exo_lat_offset(1), exo_lon_offset(1)
 
   ! lat and lon of desired exodus point
   double precision exo_lat, exo_lon, exo_lz
-  
-  character(len=255) :: meshname
-  character(len=255) :: ofname
+
+  ! meshes and output files
+  character(len=255), dimension(nbdys) :: meshname
+  character(len=255), dimension(nbdys) :: ofname
+  logical,            dimension(nbdys) :: exo_exists
 
   !================================================================================
   !
@@ -158,7 +157,20 @@ PROGRAM wrftonalu
   bdynames(BDY_ZE) = "upper"
   bdynames(INTERIOR) = "interior"
 
+  ! meshfiles and exodus output files
+  do ibdy = 1, nbdys
+     meshname(ibdy) = trim(bdynames(ibdy))//'.g'
+     ofname(ibdy)   = trim(bdynames(ibdy))//'.nc'
+     inquire(file=trim(meshname(ibdy)), exist = exo_exists(ibdy))
 
+     ! Copy the mesh file to an output file (if it exists)
+     if (exo_exists(ibdy)) then
+        comstr = "cp " // trim(meshname(1))//" "//trim(ofname(1))
+        CALL system (trim(comstr))
+     endif
+  enddo
+  
+  
   !================================================================================
   !
   ! Read the WRF data files using netCDF Fortran functions
@@ -314,14 +326,8 @@ PROGRAM wrftonalu
   !
   !================================================================================
 
-  ! Copy the mesh file to an output file
-  meshname = "front.g"
-  ofname = "front.nc"
-  comstr = "cp " // trim(meshname)//" "//trim(ofname)
-  CALL system (trim(comstr))
-
   ! Prepare the output file
-  call prep_exodus(1, trim(ofname), cnt(2), Times)
+  call prep_exodus(1, trim(ofname(1)), cnt(2), Times)
 
   ! Define an offset (lat,long) for the mesh
   if ( .not. coord_offset ) then
