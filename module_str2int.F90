@@ -26,7 +26,9 @@ contains
   !
   !> @param[in]  str     input string
   !> @param[out] int     output integer
-  !> @param[out] status  output status
+  !> @param[out] stat    output status
+  !
+  !--------------------------------------------------------------------------------
   elemental subroutine str2int(str,int,stat)
     implicit none
     ! Arguments

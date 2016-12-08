@@ -69,11 +69,11 @@ PROGRAM wrftonalu
   INTEGER :: ids_check , ide_check , jds_check , jde_check , kds_check , kde_check
   INTEGER :: i , j , k
   INTEGER :: ii, jj, kk
+  integer :: itime
   
   ! borrowed from NCLS for computing T from Theta
   DOUBLE PRECISION P1000MB,R_D,CP, RHO0
   PARAMETER (P1000MB=100000.D0,R_D=266.9D0,CP=7.D0*R_D/2.D0)
-
 
   ! Exodus mesh (lat,lon) offset
   logical :: coord_offset
@@ -173,7 +173,7 @@ PROGRAM wrftonalu
   
   !================================================================================
   !
-  ! Read the WRF data files
+  ! WRF data: reading, allocating
   !
   !================================================================================
 
@@ -232,12 +232,15 @@ PROGRAM wrftonalu
   CALL ncderrcheck( __LINE__,stat)
   stat = NF_GET_VARA_TEXT(ncid,varid,strt,cnt,Times) ! read in the Times data in the Times text
   CALL ncderrcheck( __LINE__,stat )
+
+  ! This segment should go in a TIME for loop  
   DO WHILE (.TRUE.) ! just replace ':' char by '_' in the Times variable
      tmpstr = Times(it)
      i = INDEX(Times(it),':')
      IF ( i .EQ. 0 ) EXIT
      Times(it)(i:i) = '_'
   ENDDO
+  ! end TIME for loop section
   
   ! Allocate a lot of variables
   ips = ids ; ipe = ide
@@ -252,6 +255,28 @@ PROGRAM wrftonalu
   ctrl = .TRUE. ! true value going in says this field is required
   CALL getvar_real(ctrl,ncid,nfiles,'XLAT' ,xlat ,it,2,ips,ipe-1,jps,jpe-1,1,1)
   CALL getvar_real(ctrl,ncid,nfiles,'XLONG',xlong,it,2,ips,ipe-1,jps,jpe-1,1,1)
+
+  ! Define an offset (lat,long) for the Exodus mesh
+  if ( .not. coord_offset ) then
+     exo_lat_offset(1) = minval(xlat)  + 0.5*(maxval(xlat) - minval(xlat))
+     exo_lon_offset(1) = minval(xlong) + 0.5*(maxval(xlong) - minval(xlong))
+  else
+
+     ! If it was already set then, check to make sure it is within the
+     ! WRF data set
+     if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
+          (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
+          (exo_lon_offset(1) .le. minval(xlong)) .or. &
+          (exo_lon_offset(1) .ge. maxval(xlong)) ) then
+        
+        write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
+        write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
+        write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
+        write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
+        stop 99
+
+     endif
+  endif
 
   theta = rotation_angle ( xlat,dx,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
   ! Computed theta is counterclockwise rotation in radians of the vector from X axis, so negate and
@@ -294,6 +319,7 @@ PROGRAM wrftonalu
   zcol = 0.
   hfx = 0.
 
+  ! This segment should go in a TIME for loop  
   CALL getvar_real(ctrl,ncid,nfiles,'PH' ,ph ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe )
   CALL getvar_real(ctrl,ncid,nfiles,'PHB',phb,it,3,ips,ipe-1,jps,jpe-1,kps,kpe )
   CALL getvar_real(ctrl,ncid,nfiles,'W' ,w ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe )
@@ -303,7 +329,7 @@ PROGRAM wrftonalu
   CALL getvar_real(ctrl,ncid,nfiles,'P' ,p ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
   CALL getvar_real(ctrl,ncid,nfiles,'PB' ,pb ,it,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
 
-  have_hfx = .FALSE. ! false value going in says this field is required
+  have_hfx = .FALSE. ! false value going in says this field is not required
   CALL getvar_real(have_hfx,ncid,nfiles,'HFX',hfx,it,3,ips,ipe-1,jps,jpe-1,1,1)
 
   zz = (ph + phb )/g
@@ -314,153 +340,160 @@ PROGRAM wrftonalu
   pres = p + pb
 
   t = t+300.
+  ! end TIME for loop
 
   DEALLOCATE(ph)
   DEALLOCATE(phb)
   DEALLOCATE(u_)
   DEALLOCATE(v_)
 
-  !================================================================================
-  !
-  ! Read the Exodus mesh and interpolate WRF data there
-  !
-  !================================================================================
-
-  ibdy = 1
   
-  ! Prepare the output file
-  call prep_exodus(ibdy, trim(ofname(ibdy)), cnt(2), Times)
+  !================================================================================
+  !
+  ! Exodus mesh: prep and relate to WRF data
+  !
+  !================================================================================
+  do ibdy = 1, nbdys
+     if (exo_exists(ibdy)) then
+        ! Prepare the output file
+        call prep_exodus(ibdy, trim(ofname(ibdy)), cnt(2), Times)
 
-  ! Define an offset (lat,long) for the mesh
-  if ( .not. coord_offset ) then
-     exo_lat_offset(1) = minval(xlat)  + 0.5*(maxval(xlat) - minval(xlat))
-     exo_lon_offset(1) = minval(xlong) + 0.5*(maxval(xlong) - minval(xlong))
-  else
+        ! Read the mesh body
+        call read_exodus_bdy_coords( ibdy, exo_lat_offset, exo_lon_offset)
 
-     ! If it was already set then, check to make sure it is within the
-     ! WRF data set
-     if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
-          (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
-          (exo_lon_offset(1) .le. minval(xlong)) .or. &
-          (exo_lon_offset(1) .ge. maxval(xlong)) ) then
-        
-        write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
-        write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
-        write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
-        write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
-        stop 99
-
+        ! For each mesh (lat,lon), find the closest point in the WRF dataset
+        call relate_exodus_wrf( ibdy ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
      endif
-  endif
+  enddo
   
-  ! Read the mesh body
-  call read_exodus_bdy_coords( ibdy, exo_lat_offset, exo_lon_offset)
+  !================================================================================
+  !
+  ! Interpolate WRF data to the Exodus mesh
+  !
+  !================================================================================
+  
+  itime = 1
 
-  ! For each mesh (lat,lon), find the closest point in the WRF dataset
-  call relate_exodus_wrf( ibdy ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
+  ! This segment should go in a TIME for loop  
+  ! Get/set the time
+  sec = sec_of_day(TRIM(Times(it)))
+  sec = sec - sec_start + sec_offset
+  IF ( sec > 999999 ) THEN
+     WRITE(0,*)sec,' is too many seconds from start.'
+     WRITE(0,*)'Use -offset argument to make this a six digit number.'
+     CALL help
+     STOP 99
+  ENDIF
+  WRITE(secstr,'(I6.1)')sec
 
-  ! ! Get/set the time
-  ! sec = sec_of_day(TRIM(Times(it)))
-  ! sec = sec - sec_start + sec_offset
-  ! IF ( sec > 999999 ) THEN
-  !    WRITE(0,*)sec,' is too many seconds from start.'
-  !    WRITE(0,*)'Use -offset argument to make this a six digit number.'
-  !    CALL help
-  !    STOP 99
-  ! ENDIF
-  ! WRITE(secstr,'(I6.1)')sec
+  do ibdy = 1, nbdys
+     if (exo_exists(ibdy)) then
+        ! Interpolation to WRF data
+        do ipoint = 1, bdy(ibdy)%num_nodes
 
-  ! Interpolation to WRF data
-  do ipoint = 1, bdy(ibdy)%num_nodes
+           ! Exodus point information
+           exo_lat = bdy(ibdy)%lat(ipoint)
+           exo_lon = bdy(ibdy)%lon(ipoint)
+           exo_lz = bdy(ibdy)%coordz(ipoint)
+           j = bdy(ibdy)%exo_wrf_j(ipoint)
+           i = bdy(ibdy)%exo_wrf_i(ipoint)
 
-     ! Exodus point information
-     exo_lat = bdy(ibdy)%lat(ipoint)
-     exo_lon = bdy(ibdy)%lon(ipoint)
-     exo_lz = bdy(ibdy)%coordz(ipoint)
-     j = bdy(ibdy)%exo_wrf_j(ipoint)
-     i = bdy(ibdy)%exo_wrf_i(ipoint)
-
-     DO kk = 1,size(zz,3)
-        DO jj = 0,1
-           DO ii = 0,1
-              zzcol(ii,jj,kk)=zz(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! zz is full height at cell centers
-              IF ( kk .LE. kpe-1 ) THEN
-                 zcol (ii,jj,kk)= z(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! z is half height at cell centers
-              ENDIF
+           DO kk = 1,size(zz,3)
+              DO jj = 0,1
+                 DO ii = 0,1
+                    zzcol(ii,jj,kk)=zz(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! zz is full height at cell centers
+                    IF ( kk .LE. kpe-1 ) THEN
+                       zcol (ii,jj,kk)= z(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! z is half height at cell centers
+                    ENDIF
+                 ENDDO
+              ENDDO
            ENDDO
-        ENDDO
-     ENDDO
-     
-     ! find the level index of the exodu point in WRF, both in the full-level
-     ! and half-level ranges. Lowest index is closest to surface. Also store the
-     ! indices for the 3 neighbors to the north, east, and northeast, since these
-     ! are needed for horizontally interpolating in the finterp function
-     DO jj = 0,1
-        DO ii = 0,1
-           IF (zzcol(ii,jj,1).LE.exo_lz.AND.exo_lz.LT.zcol(ii,jj,1))THEN ! special case, exo_lz is below first half-level
-              kzz(ii,jj) = 1 ! ignore other special case since exodus wont go that high
-              kz(ii,jj) = 0
-           ELSE
-              DO k = kps+1,kpe
-                 IF (zzcol(ii,jj,k-1).LE.exo_lz.AND.exo_lz.LT.zzcol(ii,jj,k)) kzz(ii,jj) = k-1 ! full level
-                 IF (k.LT.kpe) THEN
-                    IF (zcol(ii,jj,k-1).LE.exo_lz.AND.exo_lz.LT.zcol(ii,jj,k)) kz(ii,jj) = k-1 ! half level
+
+           ! find the level index of the exodu point in WRF, both in the full-level
+           ! and half-level ranges. Lowest index is closest to surface. Also store the
+           ! indices for the 3 neighbors to the north, east, and northeast, since these
+           ! are needed for horizontally interpolating in the finterp function
+           DO jj = 0,1
+              DO ii = 0,1
+                 IF (zzcol(ii,jj,1).LE.exo_lz.AND.exo_lz.LT.zcol(ii,jj,1))THEN ! special case, exo_lz is below first half-level
+                    kzz(ii,jj) = 1 ! ignore other special case since exodus wont go that high
+                    kz(ii,jj) = 0
+                 ELSE
+                    DO k = kps+1,kpe
+                       IF (zzcol(ii,jj,k-1).LE.exo_lz.AND.exo_lz.LT.zzcol(ii,jj,k)) kzz(ii,jj) = k-1 ! full level
+                       IF (k.LT.kpe) THEN
+                          IF (zcol(ii,jj,k-1).LE.exo_lz.AND.exo_lz.LT.zcol(ii,jj,k)) kz(ii,jj) = k-1 ! half level
+                       ENDIF
+                    ENDDO
                  ENDIF
               ENDDO
+           ENDDO
+
+           !variables on half-levels exodus coords dims of field dims of lat lon arrays
+           u_new = finterp(u ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+           v_new = finterp(v ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+           t_new = finterp(t ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+           pres_new = finterp(pres,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+
+           !variables on full-levels exodus coords dims of field dims of lat lon arrays
+           w_new = finterp(w ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
+           t_ground = t(i,j,1)
+           ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
+           ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
+           ! surface as rho0 = p0 / (R*T0), where R is 286.9 and T0 is surface temp. Substituting for rho
+           ! into the above, this becomes:
+           pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * exo_lz
+
+           ! heat flux if we want it
+           IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
+              kzz = 0 ! turn off vertical interpolation in call to finterp
+              hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
+              rho0 = pres(i,j,1) / ( R_D * t_ground )
+              hfx_new = -( hfx_new / ( rho0 * CP ) )
            ENDIF
-        ENDDO
-     ENDDO
 
-     !variables on half-levels exodus coords dims of field dims of lat lon arrays
-     u_new = finterp(u ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-     v_new = finterp(v ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-     t_new = finterp(t ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-     pres_new = finterp(pres,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+           ! Save the variables
+           ! cont_velocity_bc_x
+           bdy(ibdy)%vals_nod_var1(ipoint, itime) = u_new*costheta-v_new*sintheta
+           ! cont_velocity_bc_y
+           bdy(ibdy)%vals_nod_var2(ipoint, itime) = u_new*sintheta+v_new*costheta
+           ! cont_velocity_bc_z
+           bdy(ibdy)%vals_nod_var3(ipoint, itime) = w_new
+           ! temperature_bc
+           bdy(ibdy)%vals_nod_var4(ipoint, itime) = t_new
+           ! velocity_bc_x
+           bdy(ibdy)%vals_nod_var5(ipoint, itime) = u_new*costheta-v_new*sintheta
+           ! velocity_bc_y
+           bdy(ibdy)%vals_nod_var6(ipoint, itime) = u_new*sintheta+v_new*costheta
+           ! velocity_bc_z
+           bdy(ibdy)%vals_nod_var7(ipoint, itime) = w_new
 
-     !variables on full-levels exodus coords dims of field dims of lat lon arrays
-     w_new = finterp(w ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
-     t_ground = t(i,j,1)
-     ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
-     ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
-     ! surface as rho0 = p0 / (R*T0), where R is 286.9 and T0 is surface temp. Substituting for rho
-     ! into the above, this becomes:
-     pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * exo_lz
+           ! WHAT ABOUT PD? and hfx_new? And why are there two different velocities?
 
-     ! heat flux if we want it
-     IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-        kzz = 0 ! turn off vertical interpolation in call to finterp
-        hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
-        rho0 = pres(i,j,1) / ( R_D * t_ground )
-        hfx_new = -( hfx_new / ( rho0 * CP ) )
-     ENDIF
-
-     ! Save the variables
-     ! cont_velocity_bc_x
-     bdy(ibdy)%vals_nod_var1(ipoint, 1) = u_new*costheta-v_new*sintheta
-     ! cont_velocity_bc_y
-     bdy(ibdy)%vals_nod_var2(ipoint, 1) = u_new*sintheta+v_new*costheta
-     ! cont_velocity_bc_z
-     bdy(ibdy)%vals_nod_var3(ipoint, 1) = w_new
-     ! temperature_bc
-     bdy(ibdy)%vals_nod_var4(ipoint, 1) = t_new
-     ! velocity_bc_x
-     bdy(ibdy)%vals_nod_var5(ipoint, 1) = u_new*costheta-v_new*sintheta
-     ! velocity_bc_y
-     bdy(ibdy)%vals_nod_var6(ipoint, 1) = u_new*sintheta+v_new*costheta
-     ! velocity_bc_z
-     bdy(ibdy)%vals_nod_var7(ipoint, 1) = w_new
-
-     ! WHAT ABOUT PD? and hfx_new? And why are there two different velocities?
-     
+        enddo
+     endif
   enddo
+  ! end TIME for loop
 
-  ! Write out variables to the file
-  call write_vars_exodus( ibdy )
-  
-  ! Close the exodus file
-  call close_exodus(ibdy)
-  
-  ! Nice final message of congratulations
+
+  !================================================================================
+  !
+  ! Write to file and clean up
+  !
+  !================================================================================
+  do ibdy = 1, nbdys
+     if (exo_exists(ibdy)) then
+        
+        ! Write out variables to the file
+        call write_vars_exodus( ibdy )
+        
+        ! Close the exodus file
+        call close_exodus(ibdy)
+
+     endif
+  enddo
+     
+  ! Let the user know we are done here
   write(*,*)'Conversion done.'
   
 END PROGRAM wrftonalu
