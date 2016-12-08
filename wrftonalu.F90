@@ -390,14 +390,14 @@ PROGRAM wrftonalu
         ENDDO
      ENDDO
      
-     ! find the level index of the openfoam point in WRF, both in the full-level
+     ! find the level index of the exodu point in WRF, both in the full-level
      ! and half-level ranges. Lowest index is closest to surface. Also store the
      ! indices for the 3 neighbors to the north, east, and northeast, since these
      ! are needed for horizontally interpolating in the finterp function
      DO jj = 0,1
         DO ii = 0,1
            IF (zzcol(ii,jj,1).LE.exo_lz.AND.exo_lz.LT.zcol(ii,jj,1))THEN ! special case, exo_lz is below first half-level
-              kzz(ii,jj) = 1 ! ignore other special case since open foam wont go that high
+              kzz(ii,jj) = 1 ! ignore other special case since exodus wont go that high
               kz(ii,jj) = 0
            ELSE
               DO k = kps+1,kpe
@@ -459,164 +459,22 @@ PROGRAM wrftonalu
   ! Close the exodus file
   call close_exodus(1)
   
-
-
-  ! !================================================================================
-  ! !
-  ! ! Read the OpenFoam BC files and interpolate WRF data there
-  ! !
-  ! !================================================================================
-
-  ! DO ibdy = 1,nbdys
-  !    IF ( ibdy .EQ. INTERIOR .AND. .NOT. ic ) cycle ! short circuit if we do not want to generate interior file
-  !    IF ( ibdy .NE. INTERIOR ) THEN
-  !       CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'_bc.dat')
-  !    ELSE
-  !       CALL read_openfoam_bdy_coords(ibdy,TRIM(bdynames(ibdy))//'.dat')
-  !    ENDIF
-  !    IF ( ALLOCATED(bdy(ibdy)%point) ) THEN
-  !       CALL precompute_openfoam_points(ibdy,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
-  !       sec = sec_of_day(TRIM(Times(it)))
-  !       sec = sec - sec_start + sec_offset
-  !       ! create the time directory if it doesn't already exist
-  !       IF ( ibdy .NE. INTERIOR ) THEN
-  !          IF ( sec > 999999 ) THEN
-  !             WRITE(0,*)sec,' is too many seconds from start.'
-  !             WRITE(0,*)'Use -offset argument to make this a six digit number.'
-  !             CALL help
-  !             STOP 99
-  !          ENDIF
-  !          WRITE(secstr,'(I6.1)')sec
-  !          dirpath = TRIM(bdynames(ibdy))//"/"
-  !       ELSE
-  !          WRITE(secstr,'(I6.1)')sec
-  !          dirpath = ""
-  !       ENDIF
-
-  !       comstr = "mkdir -p " // TRIM(dirpath)//TRIM(ADJUSTL(secstr))
-  !       CALL system (TRIM(comstr))
-
-  !       ! Write the header of the OpenFoam files
-  !       outnameT = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/T"
-  !       OPEN( 76 , file=TRIM(outnameT), form="formatted" )
-  !       CALL write_header_scalar( 76, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "T" )
-
-  !       outnamePd = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/p_rgh"
-  !       OPEN( 77 , file=TRIM(outnamePd), form="formatted" )
-  !       CALL write_header_scalar( 77, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "p_rgh" )
-
-  !       outnameU = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/U"
-  !       OPEN( 78 , file=TRIM(outnameU), form="formatted" )
-  !       CALL write_header_vector( 78, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "U" )
-
-  !       IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-  !          outnameHFX = TRIM(dirpath)//TRIM(ADJUSTL(secstr))//"/qwall"
-  !          OPEN( 79 , file=TRIM(outnameHFX), form="formatted" )
-  !          CALL write_header_vector( 79, bdy(ibdy)%npoints , ibdy.NE.INTERIOR , sec , "qwall" )
-  !       ENDIF
-
-  !       ! Linking WRF and OpenFoam data
-  !       DO ipoint = 1,bdy(ibdy)%npoints
-  !          of_lat = bdy(ibdy)%point(ipoint)%lat
-  !          of_lon = bdy(ibdy)%point(ipoint)%lon
-  !          of_lz = bdy(ibdy)%point(ipoint)%lz
-  !          j = bdy(ibdy)%point(ipoint)%j ! precomputed jcoord of cell center corresponding to lat
-  !          i = bdy(ibdy)%point(ipoint)%i ! precomputed icoord of cell center corresponding to lon
-
-  !          DO kk = 1,size(zz,3)
-  !             DO jj = 0,1
-  !                DO ii = 0,1
-  !                   zzcol(ii,jj,kk)=zz(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! zz is full height at cell centers
-  !                   IF ( kk .LE. kpe-1 ) THEN
-  !                      zcol (ii,jj,kk)= z(i+ii,j+jj,kk) - zz(i+ii,j+jj,1) ! z is half height at cell centers
-  !                   ENDIF
-  !                ENDDO
-  !             ENDDO
-  !          ENDDO
-
-  !          ! find the level index of the openfoam point in WRF, both in the full-level
-  !          ! and half-level ranges. Lowest index is closest to surface. Also store the
-  !          ! indices for the 3 neighbors to the north, east, and northeast, since these
-  !          ! are needed for horizontally interpolating in the finterp function
-  !          DO jj = 0,1
-  !             DO ii = 0,1
-  !                IF (zzcol(ii,jj,1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,1))THEN ! special case, of_lz is below first half-level
-  !                   kzz(ii,jj) = 1 ! ignore other special case since open foam wont go that high
-  !                   kz(ii,jj) = 0
-  !                ELSE
-  !                   DO k = kps+1,kpe
-  !                      IF (zzcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zzcol(ii,jj,k)) kzz(ii,jj) = k-1 ! full level
-  !                      IF (k.LT.kpe) THEN
-  !                         IF (zcol(ii,jj,k-1).LE.of_lz.AND.of_lz.LT.zcol(ii,jj,k)) kz(ii,jj) = k-1 ! half level
-  !                      ENDIF
-  !                   ENDDO
-  !                ENDIF
-  !             ENDDO
-  !          ENDDO
-
-  !          !variables on half-levels open foam coords dims of field dims of lat lon arrays
-  !          u_new = finterp(u ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-  !          v_new = finterp(v ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-  !          t_new = finterp(t ,zcol ,xlat,xlong,kz ,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-  !          pres_new = finterp(pres,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-
-  !          !variables on full-levels open foam coords dims of field dims of lat lon arrays
-  !          w_new = finterp(w ,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
-  !          t_ground = t(i,j,1)
-  !          ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
-  !          ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
-  !          ! surface as rho0 = p0 / (R*T0), where R is 286.9 and T0 is surface temp. Substituting for rho
-  !          ! into the above, this becomes:
-  !          pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * of_lz
-  !          IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-  !             kzz = 0 ! turn off vertical interpolation in call to finterp
-  !             hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,of_lat,of_lon,of_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
-  !             rho0 = pres(i,j,1) / ( R_D * t_ground )
-  !             hfx_new = -( hfx_new / ( rho0 * CP ) )
-  !          ENDIF
-  !          WRITE(76,*) t_new
-  !          WRITE(77,*) pd
-  !          ! note that positive theta angle (computed above) implies WRF grid is rotated counterclockwise w.r.t. true
-  !          ! see http://en.wikipedia.org/wiki/Rotation_matrix
-  !          WRITE(78,'("(",f12.7," ",f12.7," ",f12.7,")")')u_new*costheta-v_new*sintheta,u_new*sintheta+v_new*costheta,w_new
-  !          IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-  !             WRITE(79,'("(",f12.7," ",f12.7," ",f12.7,")")')0., 0., hfx_new
-  !          ENDIF
-  !       ENDDO
-  !       ! close the unit and then run a system command to strip off the first space that Fortran insists on writing
-  !       CALL write_trailer_T(76,ibdy.EQ.INTERIOR) ; CLOSE( 76 ) ;
-  !       comstr = "sed 's/^ //' "//TRIM(outnameT) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameT)
-  !       CALL system(TRIM(comstr))
-  !       CALL write_trailer_pd(77,ibdy.EQ.INTERIOR) ; CLOSE( 77 ) ;
-  !       comstr = "sed 's/^ //' "//TRIM(outnamePd) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnamePd)
-  !       CALL system(TRIM(comstr))
-  !       CALL write_trailer_U(78,ibdy.EQ.INTERIOR) ; CLOSE( 78 ) ;
-  !       comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
-  !       CALL system(TRIM(comstr))
-  !       IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-  !          CALL write_trailer_HFX(79,.FALSE.) ; CLOSE( 79 ) ;
-  !          comstr = "sed 's/^ //' "//TRIM(outnameU) //"> foo_ ; /bin/mv -f foo_ "// TRIM(outnameU)
-  !          CALL system(TRIM(comstr))
-  !       ENDIF
-  !    ENDIF
-  ! ENDDO
-
   ! Nice final message of congratulations
-  write(*,*)'End program. Congratulations!'
+  write(*,*)'Conversion done.'
   
 END PROGRAM wrftonalu
 
 !--------------------------------------------------------------------------------
 !
-!> @brief finterp interpolates WRF data at OpenFoam nodes
+!> @brief finterp interpolates WRF data at Exodus nodes
 !> @param f        variable to interpolate
 !> @param zcol     
 !> @param lat      latitude
 !> @param lon      longitude
 !> @param kz       
-!> @param of_lat   latitude of desired openfoam point
-!> @param of_lon   longitude of desired openfoam point
-!> @param of_lz    height of desired openfoam point
+!> @param of_lat   latitude of desired exodus point
+!> @param of_lon   longitude of desired exodus point
+!> @param of_lz    height of desired exodus point
 !> @param i        precomputed icoord of cell center corresponding to lon
 !> @param j        precomputed jcoord of cell center corresponding to lat
 !> @param is       start i index
@@ -686,7 +544,7 @@ SUBROUTINE help
   CALL getarg(0, cmd)
   WRITE(*,'(/,"Usage: ", A, " ncdfile [ncdfiles*] [-startdate startdate [-offset offset] [-coord_offset lat lon]] [-ic] [-qwall]")') trim(cmd)
   WRITE(*,'("       startdate     date string of form yyyy-mm-dd_hh_mm_ss or yyyy-mm-dd_hh:mm:ss")')
-  WRITE(*,'("       offset        number of seconds to start OpenFOAM directory naming (default: 0)")')
+  WRITE(*,'("       offset        number of seconds to start Exodus directory naming (default: 0)")')
   WRITE(*,'("       lat           latitude of origin for the Exodus mesh (default: center of WRF data)")')
   WRITE(*,'("       lon           longitude of origin for the Exodus mesh (default: center of WRF data)")')
   WRITE(*,'("       -ic           program should generate init conditions too")')
@@ -756,331 +614,6 @@ SUBROUTINE getvar_real(ctrl,ncids,numfiles,vname,buf,itime,ndim,ids,ide,jds,jde,
   RETURN
 END SUBROUTINE getvar_real
 
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam header for a scalar field
-!> @param unit        file output unit
-!> @param n           number of nodes
-!> @param bc          is this a boundary file or interior
-!> @param location    location of variable
-!> @param objectname  name of variable
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_header_scalar( unit, n, bc , location, objectname )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit, n
-  LOGICAL, INTENT(IN) :: bc ! is this a boundary file or interior
-  INTEGER, INTENT(IN) :: location
-  CHARACTER*(*), INTENT(IN) :: objectname
-  WRITE(unit,*)'/*--------------------------------*- C++ -*----------------------------------*\'
-  WRITE(unit,*)'| =========                 |                                                 |'
-  WRITE(unit,*)'| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |'
-  WRITE(unit,*)'|  \\    /   O peration     | Version:  1.6                                   |'
-  WRITE(unit,*)'|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |'
-  WRITE(unit,*)'|    \\/     M anipulation  |                                                 |'
-  WRITE(unit,*)'\*---------------------------------------------------------------------------*/'
-  WRITE(unit,*)'FoamFile'
-  WRITE(unit,*)'{'
-  WRITE(unit,*)'    version     2.0;'
-  WRITE(unit,*)'    format      ascii;'
-  IF ( bc ) THEN
-     WRITE(unit,*)'    class       scalarAverageField;'
-     WRITE(unit,*)'    object      values;'
-  ELSE
-     WRITE(unit,*)'    class       volScalarField;'
-     WRITE(unit,'("    location    """,i4.4,""";")')location
-     WRITE(unit,*)'    object      ',TRIM(objectname),' ;'
-  ENDIF
-  WRITE(unit,*)'}'
-  WRITE(unit,*)'// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //'
-  WRITE(unit,*)' '
-  IF ( bc ) THEN
-     WRITE(unit,*)'// Average'
-     IF ( TRIM(objectname).EQ.'U' ) THEN
-        WRITE(unit,*)'(0 0 0)'
-     ELSE
-        WRITE(unit,*)'0'
-     ENDIF
-     WRITE(unit,*)' '
-     WRITE(unit,*)' '
-  ELSE
-     IF ( TRIM(objectname).EQ.'p_rgh' ) THEN
-        WRITE(unit,*)'dimensions      [0 2 -2 0 0 0 0];' ! And this means m^2/s^2 !
-     ELSE IF ( TRIM(objectname).EQ.'T' ) THEN
-        WRITE(unit,*)'dimensions      [0 0 0 1 0 0 0];' ! This means degrees Kelvin !
-     ELSE
-        WRITE(0,*)'write_header_scalar does not know about this variable: ',TRIM(objectname)
-        STOP 122
-     ENDIF
-     WRITE(unit,*)' '
-     WRITE(unit,*)'internalField   nonuniform List<scalar>'
-  ENDIF
-  WRITE(unit,'(I10)')n
-  WRITE(unit,*)'('
-END SUBROUTINE write_header_scalar
-
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam header for a vector field
-!> @param unit        file output unit
-!> @param n           number of nodes
-!> @param bc          is this a boundary file or interior
-!> @param location    location of variable
-!> @param objectname  name of variable
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_header_vector( unit, n, bc, location, objectname )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit, n
-  LOGICAL, INTENT(IN) :: bc ! boundary file or interior
-  INTEGER, INTENT(IN) :: location
-  CHARACTER*(*), INTENT(IN) :: objectname
-  WRITE(unit,*)'/*--------------------------------*- C++ -*----------------------------------*\'
-  WRITE(unit,*)'| =========                 |                                                 |'
-  WRITE(unit,*)'| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |'
-  WRITE(unit,*)'|  \\    /   O peration     | Version:  1.6                                   |'
-  WRITE(unit,*)'|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |'
-  WRITE(unit,*)'|    \\/     M anipulation  |                                                 |'
-  WRITE(unit,*)'\*---------------------------------------------------------------------------*/'
-  WRITE(unit,*)'FoamFile'
-  WRITE(unit,*)'{'
-  WRITE(unit,*)'    version     2.0;'
-  WRITE(unit,*)'    format      ascii;'
-  IF ( bc ) THEN
-     WRITE(unit,*)'    class       vectorAverageField;'
-     WRITE(unit,*)'    object      values;'
-  ELSE
-     WRITE(unit,*)'    class       volVectorField;'
-     WRITE(unit,'("    location    """,i4.4,""";")')location
-     WRITE(unit,*)'    object      ',TRIM(objectname),';'
-  ENDIF
-  WRITE(unit,*)'}'
-  WRITE(unit,*)'// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //'
-  WRITE(unit,*)' '
-  IF ( bc ) THEN
-     WRITE(unit,*)'// Average'
-     WRITE(unit,*)'(0 0 0)'
-     WRITE(unit,*)' '
-     WRITE(unit,*)' '
-  ELSE
-     IF ( TRIM(objectname).EQ.'U' ) THEN
-        WRITE(unit,*)'dimensions      [0 1 -1 0 0 0 0];' ! this means m/s
-     ELSE IF ( TRIM(objectname).EQ.'qwall' ) THEN
-        WRITE(unit,*)'dimensions      [0 1 -1 1 0 0 0];' ! this means ?
-     ENDIF
-     WRITE(unit,*)' '
-     WRITE(unit,*)'internalField   nonuniform List<vector>'
-  ENDIF
-  WRITE(unit,'(I10)')n
-  WRITE(unit,*)'('
-END SUBROUTINE write_header_vector
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam file trailer for variable U
-!> @param unit        file output unit
-!> @param interior    is this a boundary file or interior
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_trailer_U ( unit, interior )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit
-  LOGICAL, INTENT(IN) :: interior
-  WRITE(unit,*)')'
-  WRITE(unit,*)';'
-  IF ( interior ) THEN
-     WRITE(unit,*)
-     WRITE(unit,*)'boundaryField'
-     WRITE(unit,*)'{'
-     WRITE(unit,*)'    lower'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            velocityABLWallFunction;'
-     WRITE(unit,*)'        print           1;'
-     WRITE(unit,*)'        U               U;'
-     WRITE(unit,*)'        value           uniform (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    upper'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    west'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    east'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    south'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    north'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          (0 0 0);'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'}'
-     WRITE(unit,*)
-     WRITE(unit,*)
-  ENDIF
-  WRITE(unit,*)
-  WRITE(unit,*)'// ************************************************************************* //'
-  RETURN
-END SUBROUTINE write_trailer_U
-
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam file trailer for variable T
-!> @param unit        file output unit
-!> @param interior    is this a boundary file or interior
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_trailer_T ( unit, interior )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit
-  LOGICAL, INTENT(IN) :: interior
-  WRITE(unit,*)')'
-  WRITE(unit,*)';'
-  WRITE(unit,*)
-  IF ( interior ) THEN
-     WRITE(unit,*)'boundaryField'
-     WRITE(unit,*)'{'
-     WRITE(unit,*)'    lower'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            zeroGradient;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    upper'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    west'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    east'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    south'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    north'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            timeVaryingMappedFixedValue;'
-     WRITE(unit,*)'        setAverage      0;'
-     WRITE(unit,*)'        offset          0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'}'
-     WRITE(unit,*)
-  ENDIF
-  WRITE(unit,*)
-  WRITE(unit,*)'// ************************************************************************* //'
-  RETURN
-END SUBROUTINE write_trailer_T
-
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam file trailer for variable pd
-!> @param unit        file output unit
-!> @param interior    is this a boundary file or interior
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_trailer_pd( unit, interior )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit
-  LOGICAL, INTENT(IN) :: interior
-  WRITE(unit,*)')'
-  WRITE(unit,*)';'
-  WRITE(unit,*)
-  IF ( interior ) THEN
-     WRITE(unit,*)'boundaryField'
-     WRITE(unit,*)'{'
-     WRITE(unit,*)'    lower'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    upper'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    east'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    west'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    south'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'    north'
-     WRITE(unit,*)'    {'
-     WRITE(unit,*)'        type            buoyantPressureMod;'
-     WRITE(unit,*)'        rho             rhok;'
-     WRITE(unit,*)'        value           uniform 0;'
-     WRITE(unit,*)'    }'
-     WRITE(unit,*)'}'
-     WRITE(unit,*)
-  ENDIF
-  WRITE(unit,*)
-  WRITE(unit,*)'// ************************************************************************* //'
-  RETURN
-END SUBROUTINE write_trailer_pd
-
-
-!--------------------------------------------------------------------------------
-!
-!> @brief Write OpenFoam file trailer for variable HFX (heat flux)
-!> @param unit        file output unit
-!> @param interior    is this a boundary file or interior
-!
-!--------------------------------------------------------------------------------
-SUBROUTINE write_trailer_HFX ( unit, interior )
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: unit
-  LOGICAL, INTENT(IN) :: interior
-  WRITE(unit,*)')'
-  WRITE(unit,*)';'
-  WRITE(unit,*)
-  WRITE(unit,*)'// ************************************************************************* //'
-  RETURN
-END SUBROUTINE write_trailer_HFX
-
 !--------------------------------------------------------------------------------
 !
 !> @brief Find the second of the day
@@ -1135,7 +668,9 @@ END FUNCTION valid_date
 
 !--------------------------------------------------------------------------------
 !
-!> @brief Not sure what this does
+!> @brief Is the string a number?
+!> @param i    integer
+!> @param str  string
 !
 !--------------------------------------------------------------------------------
 LOGICAL FUNCTION isnum ( i, str )
