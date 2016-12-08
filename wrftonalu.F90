@@ -160,7 +160,7 @@ PROGRAM wrftonalu
   ! meshfiles and exodus output files
   do ibdy = 1, nbdys
      meshname(ibdy) = trim(bdynames(ibdy))//'.g'
-     ofname(ibdy)   = trim(bdynames(ibdy))//'.nc'
+     ofname(ibdy)   = trim(bdynames(ibdy))//'.e'
      inquire(file=trim(meshname(ibdy)), exist = exo_exists(ibdy))
 
      ! Copy the mesh file to an output file (if it exists)
@@ -173,7 +173,7 @@ PROGRAM wrftonalu
   
   !================================================================================
   !
-  ! Read the WRF data files using netCDF Fortran functions
+  ! Read the WRF data files
   !
   !================================================================================
 
@@ -326,8 +326,10 @@ PROGRAM wrftonalu
   !
   !================================================================================
 
+  ibdy = 1
+  
   ! Prepare the output file
-  call prep_exodus(1, trim(ofname(1)), cnt(2), Times)
+  call prep_exodus(ibdy, trim(ofname(1)), cnt(2), Times)
 
   ! Define an offset (lat,long) for the mesh
   if ( .not. coord_offset ) then
@@ -352,10 +354,10 @@ PROGRAM wrftonalu
   endif
   
   ! Read the mesh body
-  call read_exodus_bdy_coords( 1, exo_lat_offset, exo_lon_offset)
+  call read_exodus_bdy_coords( ibdy, exo_lat_offset, exo_lon_offset)
 
   ! For each mesh (lat,lon), find the closest point in the WRF dataset
-  call relate_exodus_wrf( 1 ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
+  call relate_exodus_wrf( ibdy ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
 
   ! ! Get/set the time
   ! sec = sec_of_day(TRIM(Times(it)))
@@ -369,8 +371,7 @@ PROGRAM wrftonalu
   ! WRITE(secstr,'(I6.1)')sec
 
   ! Interpolation to WRF data
-  ibdy = 1
-  do ipoint = 1, bdy(1)%num_nodes
+  do ipoint = 1, bdy(ibdy)%num_nodes
 
      ! Exodus point information
      exo_lat = bdy(ibdy)%lat(ipoint)
@@ -454,10 +455,10 @@ PROGRAM wrftonalu
   enddo
 
   ! Write out variables to the file
-  call write_vars_exodus( 1 )
+  call write_vars_exodus( ibdy )
   
   ! Close the exodus file
-  call close_exodus(1)
+  call close_exodus(ibdy)
   
   ! Nice final message of congratulations
   write(*,*)'Conversion done.'

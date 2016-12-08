@@ -478,8 +478,6 @@ contains
     include 'netcdf.inc'
     integer stat
 
-    write(*,*)"hello"
-
     stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var1_id,bdy(bdynum)%vals_nod_var1)
     CALL ncderrcheck( __LINE__ ,stat )
     stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var2_id,bdy(bdynum)%vals_nod_var2)
