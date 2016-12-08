@@ -79,6 +79,7 @@ PROGRAM wrftonalu
 
 
   ! Exodus mesh (lat,lon) offset
+  logical :: coord_offset
   real :: exo_lat_offset(1), exo_lon_offset(1)
 
   ! lat and lon of desired exodus point
@@ -86,90 +87,6 @@ PROGRAM wrftonalu
   
   character(len=255) :: meshname
   character(len=255) :: ofname
-
-  ! integer ncmeshid, ofid
-  ! integer num_side_sets_id, num_side_sets
-  ! integer len_string_dimid, len_line_dimid, four_dimid, num_info_dimid &
-  !      , num_qa_rec_dimid, len_name_dimid, num_dim_dimid, time_step_dimid &
-  !      , num_nodes_dimid, num_elem_dimid, num_el_blk_dimid, num_el_in_blk1_dimid &
-  !      , num_nod_per_el1_dimid, num_nod_var_dimid
-
-
-  ! integer num_nodes
-  
-  ! integer info_records_id
-  ! integer info_records_dims(2)
-  ! character(len=255) :: info_records
-
-  ! integer qa_records_id
-  ! integer qa_records_dims(3)
-
-  ! integer time_whole_id
-  ! integer time_whole_dims
-  ! double precision :: time_whole(6)
-
-  ! integer node_num_map_id
-  ! integer node_num_map_dims
-
-  ! integer elem_num_map_id
-  ! integer elem_num_map_dims
-
-  ! integer eb_status_id
-  ! integer eb_status_dims
-
-  ! integer eb_prop1_id
-  ! integer eb_prop1_dims
-
-  ! integer eb_names_id
-  ! integer eb_names_dims(2)
-  ! character(len=255) :: eb_names
-  
-  ! integer coordx_id
-  ! integer coordx_dims(2)
-
-  ! integer coordy_id
-  ! integer coordy_dims(2)
-
-  ! integer coordz_id
-  ! integer coordz_dims(2)
-
-  ! integer coor_names_id
-  ! integer coor_names_dims(2)
-  ! character(len=1), dimension(3) :: coor_names = (/'x', 'y', 'z'/)
-  ! integer :: coor_names_start(2) = (/1,1/)
-  ! integer :: coor_names_count(2) = (/1,3/)
-  
-  ! integer connect1_id
-  ! integer connect1_dims(2)
-
-  ! integer vals_nod_var1_id
-  ! integer vals_nod_var1_dims(2)
-
-  ! integer vals_nod_var2_id
-  ! integer vals_nod_var2_dims(2)
-  
-  ! integer vals_nod_var3_id
-  ! integer vals_nod_var3_dims(2)
-
-  ! integer vals_nod_var4_id
-  ! integer vals_nod_var4_dims(2)
-
-  ! integer vals_nod_var5_id
-  ! integer vals_nod_var5_dims(2)
-
-  ! integer vals_nod_var6_id
-  ! integer vals_nod_var6_dims(2)
-
-  ! integer vals_nod_var7_id
-  ! integer vals_nod_var7_dims(2)
-
-  ! integer name_nod_var_id
-  ! integer name_nod_var_dims(2)
-  ! character(len=33), dimension(7) :: name_nod_var
-  ! integer :: name_nod_var_start(2), name_nod_var_count(2)
-
-
-  
 
   !================================================================================
   !
@@ -182,6 +99,9 @@ PROGRAM wrftonalu
   it = 1
   sec_offset = 0
   sec_start = 0
+  coord_offset = .false.
+  exo_lat_offset(1) = 0
+  exo_lon_offset(1) = 0
   narg = iargc()
 
   IF ( narg .EQ. 0 ) THEN
@@ -205,6 +125,14 @@ PROGRAM wrftonalu
            iarg = iarg + 1
            CALL getarg(iarg,arg)
            READ(arg,*)sec_offset
+        ELSE IF ( TRIM(arg) .EQ. '-coord_offset' ) THEN
+           coord_offset = .TRUE.
+           iarg = iarg + 1
+           CALL getarg(iarg,arg)
+           READ(arg,*)exo_lat_offset(1)
+           iarg = iarg + 1
+           CALL getarg(iarg,arg)
+           READ(arg,*)exo_lon_offset(1)
         ELSE IF ( TRIM(arg) .EQ. '-ic' ) THEN
            ic = .TRUE.
         ELSE IF ( TRIM(arg) .EQ. '-qwall' ) THEN
@@ -298,21 +226,6 @@ PROGRAM wrftonalu
      IF ( i .EQ. 0 ) EXIT
      Times(it)(i:i) = '_'
   ENDDO
-  write(*,*)'Times 1',trim(Times(1))
-  write(*,*)'Times 2',trim(Times(2))
-  write(*,*)'Times 3',trim(Times(3))
-  write(*,*)'Times 4',trim(Times(4))
-  write(*,*)'Times 5',trim(Times(5))
-  write(*,*)'Times 6',trim(Times(6))
-  write(*,*)'Times 7',trim(Times(7))
-  write(*,*)'Times 8',trim(Times(8))
-  write(*,*)'Times 9',trim(Times(9))
-  write(*,*)'Times 10',trim(Times(10))
-  write(*,*)'Times 11',trim(Times(11))
-  write(*,*)'Times 12',trim(Times(12))
-  write(*,*)'Times 13',trim(Times(13))
-  write(*,*)'cnt',cnt(2)
-  
   
   ! Allocate a lot of variables
   ips = ids ; ipe = ide
@@ -408,42 +321,46 @@ PROGRAM wrftonalu
   CALL system (trim(comstr))
 
   ! Prepare the output file
-  call prep_exodus(1,trim(ofname))
+  call prep_exodus(1, trim(ofname), cnt(2), Times)
 
   ! Define an offset (lat,long) for the mesh
-  ! get the UTM coordinates too
-  exo_lat_offset(1) = 33
-  exo_lon_offset(1) = -101
-  ! Check to make sure it is within the WRF data set
-  if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
-       (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
-       (exo_lon_offset(1) .le. minval(xlong)) .or. &
-       (exo_lon_offset(1) .ge. maxval(xlong)) ) then
-     
-     write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
-     write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
-     write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
-     write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
-     stop 99
-     
-  endif
+  if ( .not. coord_offset ) then
+     exo_lat_offset(1) = minval(xlat)  + 0.5*(maxval(xlat) - minval(xlat))
+     exo_lon_offset(1) = minval(xlong) + 0.5*(maxval(xlong) - minval(xlong))
+  else
 
+     ! If it was already set then, check to make sure it is within the
+     ! WRF data set
+     if ( (exo_lat_offset(1) .le. minval(xlat)) .or. &
+          (exo_lat_offset(1) .ge. maxval(xlat)) .or. &
+          (exo_lon_offset(1) .le. minval(xlong)) .or. &
+          (exo_lon_offset(1) .ge. maxval(xlong)) ) then
+        
+        write(0,*)"Offset (lat,lon) are not contained in the WRF data set"
+        write(0,*)"Offset (lat,lon)=", exo_lat_offset, exo_lon_offset
+        write(0,*)"WRF data bounds min (lat,lon)=", minval(xlat), minval(xlong)
+        write(0,*)"                max (lat,lon)=", maxval(xlat), maxval(xlong)
+        stop 99
+
+     endif
+  endif
+  
   ! Read the mesh body
   call read_exodus_bdy_coords( 1, exo_lat_offset, exo_lon_offset)
 
   ! For each mesh (lat,lon), find the closest point in the WRF dataset
   call relate_exodus_wrf( 1 ,xlat,xlong,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme)
 
-  ! Get/set the time
-  sec = sec_of_day(TRIM(Times(it)))
-  sec = sec - sec_start + sec_offset
-  IF ( sec > 999999 ) THEN
-     WRITE(0,*)sec,' is too many seconds from start.'
-     WRITE(0,*)'Use -offset argument to make this a six digit number.'
-     CALL help
-     STOP 99
-  ENDIF
-  WRITE(secstr,'(I6.1)')sec
+  ! ! Get/set the time
+  ! sec = sec_of_day(TRIM(Times(it)))
+  ! sec = sec - sec_start + sec_offset
+  ! IF ( sec > 999999 ) THEN
+  !    WRITE(0,*)sec,' is too many seconds from start.'
+  !    WRITE(0,*)'Use -offset argument to make this a six digit number.'
+  !    CALL help
+  !    STOP 99
+  ! ENDIF
+  ! WRITE(secstr,'(I6.1)')sec
 
   ! Interpolation to WRF data
   ibdy = 1
@@ -512,19 +429,19 @@ PROGRAM wrftonalu
 
      ! Save the variables
      ! cont_velocity_bc_x
-     bdy(ibdy)%vals_nod_var1(ipoint) = u_new*costheta-v_new*sintheta
+     bdy(ibdy)%vals_nod_var1(ipoint, 1) = u_new*costheta-v_new*sintheta
      ! cont_velocity_bc_y
-     bdy(ibdy)%vals_nod_var2(ipoint) = u_new*sintheta+v_new*costheta
+     bdy(ibdy)%vals_nod_var2(ipoint, 1) = u_new*sintheta+v_new*costheta
      ! cont_velocity_bc_z
-     bdy(ibdy)%vals_nod_var3(ipoint) = w_new
+     bdy(ibdy)%vals_nod_var3(ipoint, 1) = w_new
      ! temperature_bc
-     bdy(ibdy)%vals_nod_var4(ipoint) = t_new
+     bdy(ibdy)%vals_nod_var4(ipoint, 1) = t_new
      ! velocity_bc_x
-     bdy(ibdy)%vals_nod_var5(ipoint) = u_new*costheta-v_new*sintheta
+     bdy(ibdy)%vals_nod_var5(ipoint, 1) = u_new*costheta-v_new*sintheta
      ! velocity_bc_y
-     bdy(ibdy)%vals_nod_var6(ipoint) = u_new*sintheta+v_new*costheta
+     bdy(ibdy)%vals_nod_var6(ipoint, 1) = u_new*sintheta+v_new*costheta
      ! velocity_bc_z
-     bdy(ibdy)%vals_nod_var7(ipoint) = w_new
+     bdy(ibdy)%vals_nod_var7(ipoint, 1) = w_new
 
      ! WHAT ABOUT PD? and hfx_new? And why are there two different velocities?
      
@@ -532,12 +449,9 @@ PROGRAM wrftonalu
 
   ! Write out variables to the file
   call write_vars_exodus( 1 )
-
   
   ! Close the exodus file
   call close_exodus(1)
-  
-  
   
 
 
@@ -764,11 +678,13 @@ SUBROUTINE help
   IMPLICIT NONE
   CHARACTER(LEN=120) :: cmd
   CALL getarg(0, cmd)
-  WRITE(*,'(/,"Usage: ", A, " ncdfile [ncdfiles*] [-startdate startdate [-offset offset]] [-ic]")') trim(cmd)
-  WRITE(*,'("       startdate   date string of form yyyy-mm-dd_hh_mm_ss or yyyy-mm-dd_hh:mm:ss")')
-  WRITE(*,'("       offset      number of seconds to start OpenFOAM directory naming (default 0)")')
-  WRITE(*,'("       -ic         program should generate init conditions too")')
-  WRITE(*,'("       -qwall      program should generate temp flux in lower bc file ",/)')
+  WRITE(*,'(/,"Usage: ", A, " ncdfile [ncdfiles*] [-startdate startdate [-offset offset] [-coord_offset lat lon]] [-ic] [-qwall]")') trim(cmd)
+  WRITE(*,'("       startdate     date string of form yyyy-mm-dd_hh_mm_ss or yyyy-mm-dd_hh:mm:ss")')
+  WRITE(*,'("       offset        number of seconds to start OpenFOAM directory naming (default: 0)")')
+  WRITE(*,'("       lat           latitude of origin for the Exodus mesh (default: center of WRF data)")')
+  WRITE(*,'("       lon           longitude of origin for the Exodus mesh (default: center of WRF data)")')
+  WRITE(*,'("       -ic           program should generate init conditions too")')
+  WRITE(*,'("       -qwall        program should generate temp flux in lower bc file ",/)')
   STOP
 END SUBROUTINE help
 

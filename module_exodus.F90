@@ -27,9 +27,9 @@ module module_exodus
           vals_nod_var1_id, vals_nod_var2_id, vals_nod_var3_id, &
           vals_nod_var4_id, vals_nod_var5_id, vals_nod_var6_id, &
           vals_nod_var7_id     
-     integer,      dimension(:), allocatable :: exo_wrf_i, exo_wrf_j
-     real,         dimension(:), allocatable :: coordx, coordy, coordz, lat, lon
-     real,         dimension(:), allocatable ::vals_nod_var1, vals_nod_var2, vals_nod_var3, &
+     integer,      dimension(:),   allocatable :: exo_wrf_i, exo_wrf_j
+     real,         dimension(:),   allocatable :: coordx, coordy, coordz, lat, lon
+     real,         dimension(:,:), allocatable ::vals_nod_var1, vals_nod_var2, vals_nod_var3, &
           vals_nod_var4, vals_nod_var5, vals_nod_var6, vals_nod_var7     
 
      character(4), dimension(:), allocatable :: utmzone
@@ -62,17 +62,20 @@ contains
   !> @brief Read in Exodus coordinates from a mesh
   !> @param bdynum    body index 
   !> @param fname     Exodus BC file data
+  !> @param ntimes    Number of time steps
+  !> @param times     Time steps
   !
   !--------------------------------------------------------------------------------
-  subroutine prep_exodus( bdynum, ofname )
+  subroutine prep_exodus( bdynum, ofname, ntimes, times)
 
     ! initialize
-    integer,       intent(in) :: bdynum
-    character*(*), intent(in) :: ofname
+    integer,           intent(in) :: bdynum, ntimes
+    character*(*),     intent(in) :: ofname
+    character(len=19), intent(in) :: times(100)
 
     ! internal
     include 'netcdf.inc'
-    integer stat
+    integer stat, rec
 
     ! Store time information
     integer,dimension(8) :: date_values
@@ -83,7 +86,7 @@ contains
 
     ! Variable ids and values
     integer num_nodes_dimid, time_step_dimid, len_name_dimid
-    integer info_records_id, eb_names_id, time_whole_id, &
+    integer info_records_id, eb_names_id,  &
          vals_nod_var1_dims(2), vals_nod_var2_dims(2), &
          vals_nod_var3_dims(2), vals_nod_var4_dims(2), &
          vals_nod_var5_dims(2), vals_nod_var6_dims(2), &
@@ -92,6 +95,7 @@ contains
 
     integer info_records_dims(2)
     character(len=255) :: info_records
+    integer :: info_records_start(2), info_records_count(2)
 
     integer eb_names_dims(2)
     character(len=255) :: eb_names
@@ -99,6 +103,9 @@ contains
     character(len=33), dimension(7) :: name_nod_var
     integer :: name_nod_var_start(2), name_nod_var_count(2)
 
+    double precision time_whole(ntimes)
+    integer :: time_whole_start(2), time_whole_count(2)
+    
     WRITE(0,*)'opening output file ',TRIM(ofname)
     stat = NF_OPEN(ofname, NF_WRITE, bdy(bdynum)%ofid )
     CALL ncderrcheck( __LINE__ ,stat )
@@ -201,16 +208,31 @@ contains
     stat = nf_def_var(bdy(bdynum)%ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
     CALL ncderrcheck( __LINE__,stat)
 
-    !================================================================================
-    ! Fill in some of the variables
-
-    ! put in data mode
+    ! End define mode
     stat = NF_ENDDEF(bdy(bdynum)%ofid)
     CALL ncderrcheck( __LINE__,stat)
 
+    !================================================================================
+    ! Fill in some of the variables
+
+    ! time_whole variable
+    do rec = 1, ntimes
+       time_whole(rec) = 4.0 + dble(rec)
+    end do
+    time_whole_count(1) = ntimes ! number of doubles to write
+    time_whole_count(2) = 1      ! only write one record
+    time_whole_start(1) = 1      ! start at beginning of variable
+    time_whole_start(2) = 1      ! record number to write                        
+    stat = nf_put_vara_double(bdy(bdynum)%ofid, bdy(bdynum)%time_whole_id, time_whole_start, time_whole_count, time_whole)
+    CALL ncderrcheck( __LINE__ ,stat )
+   
     ! info_records variable
     info_records = "Made with WRFTONALU on"//trim(date_str)
-    stat = nf_put_var_text(bdy(bdynum)%ofid, info_records_id, trim(info_records))
+    info_records_start(1) = 1                              ! start at beginning of variable
+    info_records_start(2) = 1                              ! record number to write
+    info_records_count(1) = len(trim(info_records))        ! number of chars to write
+    info_records_count(2) = 1                              ! only write one record
+    stat = nf_put_vara_text(bdy(bdynum)%ofid, info_records_id, info_records_start, info_records_count, info_records)
     CALL ncderrcheck( __LINE__ ,stat )
 
     ! eb_names
@@ -279,13 +301,13 @@ contains
     allocate( bdy(bdynum)%lat(bdy(bdynum)%num_nodes))
     allocate( bdy(bdynum)%lon(bdy(bdynum)%num_nodes))
 
-    allocate( bdy(bdynum)%vals_nod_var1(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var2(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var3(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var4(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var5(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var6(bdy(bdynum)%num_nodes))
-    allocate( bdy(bdynum)%vals_nod_var7(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var1(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var2(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var3(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var4(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var5(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var6(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var7(bdy(bdynum)%num_nodes, ntimes))
 
     bdy(bdynum)%coordx  = 0.0
     bdy(bdynum)%coordy  = 0.0
@@ -320,6 +342,8 @@ contains
     include 'netcdf.inc'
     integer stat
 
+    write(*,*)'closing output file'
+    
     ! Close the file
     stat = NF_CLOSE(bdy(bdynum)%ofid);
     CALL ncderrcheck( __LINE__ ,stat )
