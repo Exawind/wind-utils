@@ -29,7 +29,7 @@ module module_exodus
           vals_nod_var7_id     
      integer,      dimension(:),   allocatable :: exo_wrf_i, exo_wrf_j
      real,         dimension(:),   allocatable :: coordx, coordy, coordz, lat, lon
-     real,         dimension(:,:), allocatable ::vals_nod_var1, vals_nod_var2, vals_nod_var3, &
+     real,         dimension(:), allocatable ::vals_nod_var1, vals_nod_var2, vals_nod_var3, &
           vals_nod_var4, vals_nod_var5, vals_nod_var6, vals_nod_var7     
 
      character(4), dimension(:), allocatable :: utmzone
@@ -62,20 +62,17 @@ contains
   !> @brief Read in Exodus coordinates from a mesh
   !> @param bdynum    body index 
   !> @param ofname    Exodus BC file data
-  !> @param ntimes    Number of time steps
-  !> @param times     Time steps
   !
   !--------------------------------------------------------------------------------
-  subroutine prep_exodus( bdynum, ofname, ntimes, times)
+  subroutine prep_exodus( bdynum, ofname)
 
     ! initialize
-    integer,           intent(in) :: bdynum, ntimes
-    character*(*),     intent(in) :: ofname
-    character(len=19), intent(in) :: times(100)
+    integer,                          intent(in) :: bdynum
+    character*(*),                    intent(in) :: ofname
 
     ! internal
     include 'netcdf.inc'
-    integer stat, rec
+    integer stat
 
     ! Store time information
     integer,dimension(8) :: date_values
@@ -97,13 +94,11 @@ contains
     integer :: info_records_start(2), info_records_count(2)
 
     character(len=255) :: eb_names
+    integer :: eb_names_start(2), eb_names_count(2)
 
     character(len=33), dimension(7) :: name_nod_var
     integer :: name_nod_var_start(2), name_nod_var_count(2)
 
-    double precision time_whole(ntimes)
-    integer :: time_whole_start(2), time_whole_count(2)
-    
     WRITE(0,*)'opening output file ',TRIM(ofname)
     stat = NF_OPEN(ofname, NF_WRITE, bdy(bdynum)%ofid )
     call ncderrcheck( __LINE__ ,stat )
@@ -133,9 +128,6 @@ contains
     call ncderrcheck( __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(bdynum)%ofid,"eb_names", eb_names_id)
-    call ncderrcheck( __LINE__,stat)
-
-    stat = NF_INQ_VARID(bdy(bdynum)%ofid,"time_whole", bdy(bdynum)%time_whole_id)
     call ncderrcheck( __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(bdynum)%ofid,"coordx", bdy(bdynum)%coordx_id)
@@ -212,17 +204,6 @@ contains
 
     !================================================================================
     ! Fill in some of the variables
-
-    ! time_whole variable
-    do rec = 1, ntimes
-       time_whole(rec) = 4.0 + dble(rec)
-    end do
-    time_whole_count(1) = ntimes ! number of doubles to write
-    time_whole_count(2) = 1      ! only write one record
-    time_whole_start(1) = 1      ! start at beginning of variable
-    time_whole_start(2) = 1      ! record number to write                        
-    stat = nf_put_vara_double(bdy(bdynum)%ofid, bdy(bdynum)%time_whole_id, time_whole_start, time_whole_count, time_whole)
-    call ncderrcheck( __LINE__ ,stat )
    
     ! info_records variable
     info_records = "Made with WRFTONALU on"//trim(date_str)
@@ -235,7 +216,11 @@ contains
 
     ! eb_names
     eb_names =  "block_101"
-    stat = nf_put_var_text(bdy(bdynum)%ofid, eb_names_id, trim(eb_names))
+    eb_names_start(1) = 1                              ! start at beginning of variable
+    eb_names_start(2) = 1                              ! record number to write
+    eb_names_count(1) = LEN(trim(eb_names))            ! number of chars to write
+    eb_names_count(2) = 1                              ! only write one record
+    stat = nf_put_vara_text(bdy(bdynum)%ofid, eb_names_id, eb_names_start, eb_names_count, eb_names)
     call ncderrcheck( __LINE__ ,stat )
 
     ! name_nod_var
@@ -299,13 +284,13 @@ contains
     allocate( bdy(bdynum)%lat(bdy(bdynum)%num_nodes))
     allocate( bdy(bdynum)%lon(bdy(bdynum)%num_nodes))
 
-    allocate( bdy(bdynum)%vals_nod_var1(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var2(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var3(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var4(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var5(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var6(bdy(bdynum)%num_nodes, ntimes))
-    allocate( bdy(bdynum)%vals_nod_var7(bdy(bdynum)%num_nodes, ntimes))
+    allocate( bdy(bdynum)%vals_nod_var1(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var2(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var3(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var4(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var5(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var6(bdy(bdynum)%num_nodes))
+    allocate( bdy(bdynum)%vals_nod_var7(bdy(bdynum)%num_nodes))
 
     bdy(bdynum)%coordx  = 0.0
     bdy(bdynum)%coordy  = 0.0
@@ -463,32 +448,55 @@ contains
   !
   !> @brief Write out the necessary variables to the new Exodus file
   !> @param bdynum        body index
+  !> @param itime         Time step number
+  !> @param sec           Time (seconds)
+
   !
   !--------------------------------------------------------------------------------
-  subroutine write_vars_exodus( bdynum )
+  subroutine write_vars_exodus( bdynum, itime, sec)
 
     ! initialize
-    integer, intent(in) :: bdynum
+    integer, intent(in) :: bdynum, itime, sec
 
     ! internal
     include 'netcdf.inc'
-    integer stat
+    integer stat, start(2), count(2)
 
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var1_id,bdy(bdynum)%vals_nod_var1)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var2_id,bdy(bdynum)%vals_nod_var2)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var3_id,bdy(bdynum)%vals_nod_var3)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var4_id,bdy(bdynum)%vals_nod_var4)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var5_id,bdy(bdynum)%vals_nod_var5)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var6_id,bdy(bdynum)%vals_nod_var6)
-    call ncderrcheck( __LINE__ ,stat )
-    stat = nf_put_var_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var7_id,bdy(bdynum)%vals_nod_var7)
+    ! Initialize
+    count(1) = 1
+    count(2) = 1
+    start(1) = 1
+    start(2) = 1
+
+    ! time_whole variable
+    stat = NF_INQ_VARID(bdy(bdynum)%ofid,"time_whole", bdy(bdynum)%time_whole_id)
+    call ncderrcheck( __LINE__,stat)
+    count(1) = 1      ! number of doubles to write
+    start(1) = itime  ! record to write
+    stat = nf_put_vara_double(bdy(bdynum)%ofid, bdy(bdynum)%time_whole_id, start, count, dble(sec))
     call ncderrcheck( __LINE__ ,stat )
     
+    ! All other variables
+    count(1) = bdy(bdynum)%num_nodes ! number of doubles to write
+    count(2) = 1                     ! only write one record
+    start(1) = 1                     ! start at beginning of variable
+    start(2) = itime                 ! record number to write                        
+
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var1_id, start, count,bdy(bdynum)%vals_nod_var1)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var2_id, start, count,bdy(bdynum)%vals_nod_var2)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var3_id, start, count,bdy(bdynum)%vals_nod_var3)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var4_id, start, count,bdy(bdynum)%vals_nod_var4)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var5_id, start, count,bdy(bdynum)%vals_nod_var5)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var6_id, start, count,bdy(bdynum)%vals_nod_var6)
+    call ncderrcheck( __LINE__ ,stat )
+    stat = nf_put_vara_real(bdy(bdynum)%ofid,bdy(bdynum)%vals_nod_var7_id, start, count,bdy(bdynum)%vals_nod_var7)
+    call ncderrcheck( __LINE__ ,stat )
+
   end subroutine write_vars_exodus
   
   
