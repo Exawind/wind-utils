@@ -166,11 +166,10 @@ PROGRAM wrftonalu
 
      ! Copy the mesh file to an output file (if it exists)
      if (exo_exists(ibdy)) then
-        comstr = "cp " // trim(meshname(1))//" "//trim(ofname(1))
+        comstr = "cp " // trim(meshname(ibdy))//" "//trim(ofname(ibdy))
         CALL system (trim(comstr))
      endif
-  enddo
-  
+  enddo  
   
   !================================================================================
   !
@@ -314,7 +313,7 @@ PROGRAM wrftonalu
   do ibdy = 1, nbdys
      if (exo_exists(ibdy)) then
         ! Prepare the output file
-        call prep_exodus(ibdy, trim(ofname(ibdy)))
+        call prep_exodus(ibdy, trim(ofname(ibdy)), ibdy .eq. BDY_ZS .and. have_hfx .and. use_hfx)
 
         ! Read the mesh body
         call read_exodus_bdy_coords( ibdy, exo_lat_offset, exo_lon_offset)
@@ -436,14 +435,6 @@ PROGRAM wrftonalu
               ! into the above, this becomes:
               pd = (pres_new*R_D*t_ground)/pres(i,j,1) - g * exo_lz
 
-              ! heat flux if we want it
-              IF ( ibdy .EQ. BDY_ZS .AND. have_hfx .AND. use_hfx ) THEN
-                 kzz = 0 ! turn off vertical interpolation in call to finterp
-                 hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
-                 rho0 = pres(i,j,1) / ( R_D * t_ground )
-                 hfx_new = -( hfx_new / ( rho0 * CP ) )
-              ENDIF
-
               ! Save the variables
               ! cont_velocity_bc_x
               bdy(ibdy)%vals_nod_var1(ipoint) = u_new*costheta-v_new*sintheta
@@ -460,7 +451,15 @@ PROGRAM wrftonalu
               ! velocity_bc_z
               bdy(ibdy)%vals_nod_var7(ipoint) = w_new
 
-              ! WHAT ABOUT PD? and hfx_new? And why are there two different velocities?
+              ! heat flux if we want it
+              if ( bdy(ibdy)%using_hfx) then
+                 kzz = 0 ! turn off vertical interpolation in call to finterp
+                 hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
+                 rho0 = pres(i,j,1) / ( R_D * t_ground )
+                 hfx_new = -( hfx_new / ( rho0 * CP ) )
+
+                 bdy(ibdy)%vals_nod_var8(ipoint) = hfx_new
+              endif
 
            enddo
 
@@ -470,7 +469,6 @@ PROGRAM wrftonalu
         endif
      enddo
   enddo
-  ! end TIME for loop
 
 
   !================================================================================
@@ -484,10 +482,24 @@ PROGRAM wrftonalu
      endif
   enddo
 
-  DEALLOCATE(ph)
-  DEALLOCATE(phb)
-  DEALLOCATE(u_)
-  DEALLOCATE(v_)
+  deallocate(zz)
+  deallocate(w)
+  deallocate(ph)
+  deallocate(phb)
+  deallocate(pres)
+  deallocate(z)
+  deallocate(p)
+  deallocate(pb)
+  deallocate(t)
+  deallocate(u_)
+  deallocate(v_)
+  deallocate(u)
+  deallocate(v)
+  deallocate(xlat)
+  deallocate(xlong)
+  deallocate(hfx)
+  deallocate(zzcol)
+  deallocate(zcol)
   
   ! Let the user know we are done here
   write(*,*)'Conversion done.'
