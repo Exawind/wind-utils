@@ -330,34 +330,6 @@ PROGRAM wrftonalu
   !
   !================================================================================
 
-  !================================================================================
-  ! WRF data
-  itime = 1
-  ! variables
-  CALL getvar_real(ctrl,ncid,nfiles,'PH' ,ph ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
-  CALL getvar_real(ctrl,ncid,nfiles,'PHB',phb,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
-  CALL getvar_real(ctrl,ncid,nfiles,'W' ,w ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
-  CALL getvar_real(ctrl,ncid,nfiles,'T' ,t ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
-  CALL getvar_real(ctrl,ncid,nfiles,'U' ,u_ ,itime,3,ips,ipe ,jps,jpe-1,kps,kpe-1)
-  write(*,*)'yo'
-  CALL getvar_real(ctrl,ncid,nfiles,'V' ,v_ ,itime,3,ips,ipe-1,jps,jpe ,kps,kpe-1)
-  write(*,*)'yo2'
-  CALL getvar_real(ctrl,ncid,nfiles,'P' ,p ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
-  CALL getvar_real(ctrl,ncid,nfiles,'PB' ,pb ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
-
-  have_hfx = .FALSE. ! false value going in says this field is not required
-  CALL getvar_real(have_hfx,ncid,nfiles,'HFX',hfx,itime,3,ips,ipe-1,jps,jpe-1,1,1)
-
-  zz = (ph + phb )/g
-  z = (zz(:,:,kps:kpe-1) + zz(:,:,kps+1:kpe))*0.5
-  u = (u_(ips:ipe-1,:,:)+u_(ips+1:ipe,:,:))*0.5
-  v = (v_(:,jps:jpe-1,:)+v_(:,jps+1:jpe,:))*0.5
-
-  pres = p + pb
-
-  t = t+300.
-
-  !ntimes = 1
   do itime = 1,ntimes
 
      !================================================================================
@@ -380,6 +352,29 @@ PROGRAM wrftonalu
         STOP 99
      ENDIF
      WRITE(secstr,'(I6.1)')sec
+
+     ! variables
+     CALL getvar_real(ctrl,ncid,nfiles,'PH' ,ph ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
+     CALL getvar_real(ctrl,ncid,nfiles,'PHB',phb,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
+     CALL getvar_real(ctrl,ncid,nfiles,'W' ,w   ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe )
+     CALL getvar_real(ctrl,ncid,nfiles,'T' ,t   ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
+     CALL getvar_real(ctrl,ncid,nfiles,'U' ,u_  ,itime,3,ips,ipe  ,jps,jpe-1,kps,kpe-1)
+     CALL getvar_real(ctrl,ncid,nfiles,'V' ,v_  ,itime,3,ips,ipe-1,jps,jpe  ,kps,kpe-1)
+     CALL getvar_real(ctrl,ncid,nfiles,'P' ,p   ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
+     CALL getvar_real(ctrl,ncid,nfiles,'PB' ,pb ,itime,3,ips,ipe-1,jps,jpe-1,kps,kpe-1)
+
+     have_hfx = .FALSE. ! false value going in says this field is not required
+     CALL getvar_real(have_hfx,ncid,nfiles,'HFX',hfx,itime,3,ips,ipe-1,jps,jpe-1,1,1)
+
+     zz = (ph + phb )/g
+     z = (zz(:,:,kps:kpe-1) + zz(:,:,kps+1:kpe))*0.5
+     u = (u_(ips:ipe-1,:,:)+u_(ips+1:ipe,:,:))*0.5
+     v = (v_(:,jps:jpe-1,:)+v_(:,jps+1:jpe,:))*0.5
+
+     pres = p + pb
+
+     t = t+300.
+
 
      !================================================================================
      ! Interpolation
@@ -493,7 +488,7 @@ PROGRAM wrftonalu
   DEALLOCATE(phb)
   DEALLOCATE(u_)
   DEALLOCATE(v_)
-
+  
   ! Let the user know we are done here
   write(*,*)'Conversion done.'
   
@@ -636,7 +631,12 @@ SUBROUTINE getvar_real(ctrl,ncids,numfiles,vname,buf,itime,ndim,ids,ide,jds,jde,
               cnt(2) = jde-jds+1
               cnt(3) = itime
            ENDIF
+           write(*,*)'-------'
+           !cnt(4) = 1
+           write(*,*)'getting ',vname,' at ',itime,' with strt=', strt,' and cnt=',cnt
            stat = NF_GET_VARA_REAL(ncid,varid,strt,cnt,buf)
+           write(*,*)'got ',vname,' at ',itime,' with status ', stat
+           write(*,*)'-------'
            IF ( stat .EQ. 0 ) found = .TRUE.
         ENDIF
      ENDIF
