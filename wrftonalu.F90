@@ -329,7 +329,7 @@ PROGRAM wrftonalu
   ! Interpolate WRF data to the Exodus mesh
   !
   !================================================================================
-
+  
   do itime = 1,ntimes
 
      !================================================================================
@@ -621,22 +621,18 @@ SUBROUTINE getvar_real(ctrl,ncids,numfiles,vname,buf,itime,ndim,ids,ide,jds,jde,
         stat = NF_INQ_VARID(ncid,vname,varid)
         IF ( stat .EQ. 0 ) THEN
            strt = 1
+           strt(4) = itime
            IF ( ndim .EQ. 3 ) THEN
               cnt(1) = ide-ids+1
               cnt(2) = jde-jds+1
               cnt(3) = kde-kds+1
-              cnt(4) = itime
+              cnt(4) = 1
            ELSE
               cnt(1) = ide-ids+1
               cnt(2) = jde-jds+1
-              cnt(3) = itime
+              cnt(3) = 1
            ENDIF
-           write(*,*)'-------'
-           !cnt(4) = 1
-           write(*,*)'getting ',vname,' at ',itime,' with strt=', strt,' and cnt=',cnt
            stat = NF_GET_VARA_REAL(ncid,varid,strt,cnt,buf)
-           write(*,*)'got ',vname,' at ',itime,' with status ', stat
-           write(*,*)'-------'
            IF ( stat .EQ. 0 ) found = .TRUE.
         ENDIF
      ENDIF
