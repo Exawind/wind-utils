@@ -115,7 +115,7 @@ contains
 
     WRITE(0,*)'opening output file ',TRIM(ofname)
     stat = NF_OPEN(ofname, NF_WRITE, bdy(ibdy)%ofid )
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     !================================================================================
     ! Get system information
@@ -128,101 +128,101 @@ contains
     !================================================================================
     ! Get mesh information
     stat = NF_INQ_DIMID(bdy(ibdy)%ofid,"num_nodes", num_nodes_dimid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
     stat = NF_INQ_DIMLEN(bdy(ibdy)%ofid, num_nodes_dimid, bdy(ibdy)%num_nodes)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_DIMID(bdy(ibdy)%ofid,"time_step", time_step_dimid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_DIMID(bdy(ibdy)%ofid,"len_name", len_name_dimid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"info_records", info_records_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"eb_names", eb_names_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"coordx", bdy(ibdy)%coordx_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"coordy", bdy(ibdy)%coordy_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"coordz", bdy(ibdy)%coordz_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     !================================================================================
     ! Define new dimensions and variables
 
     ! put in define mode
     stat = NF_REDEF(bdy(ibdy)%ofid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! Write out num_nod_var dimension
     stat = nf_def_dim(bdy(ibdy)%ofid, "num_nod_var", num_vars , bdy(ibdy)%num_nod_var_dimid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var1 variable
     vals_nod_var1_dims(1) = num_nodes_dimid
     vals_nod_var1_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var1", nf_double, 2, vals_nod_var1_dims , bdy(ibdy)%vals_nod_var1_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var2 variable
     vals_nod_var2_dims(1) = num_nodes_dimid
     vals_nod_var2_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var2", nf_double, 2, vals_nod_var2_dims , bdy(ibdy)%vals_nod_var2_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var3 variable
     vals_nod_var3_dims(1) = num_nodes_dimid
     vals_nod_var3_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var3", nf_double, 2, vals_nod_var3_dims , bdy(ibdy)%vals_nod_var3_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var4 variable
     vals_nod_var4_dims(1) = num_nodes_dimid
     vals_nod_var4_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var4", nf_double, 2, vals_nod_var4_dims , bdy(ibdy)%vals_nod_var4_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var5 variable
     vals_nod_var5_dims(1) = num_nodes_dimid
     vals_nod_var5_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var5", nf_double, 2, vals_nod_var5_dims , bdy(ibdy)%vals_nod_var5_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var6 variable
     vals_nod_var6_dims(1) = num_nodes_dimid
     vals_nod_var6_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var6", nf_double, 2, vals_nod_var6_dims , bdy(ibdy)%vals_nod_var6_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var7 variable
     vals_nod_var7_dims(1) = num_nodes_dimid
     vals_nod_var7_dims(2) = time_step_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var7", nf_double, 2, vals_nod_var7_dims , bdy(ibdy)%vals_nod_var7_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! vals_nod_var8 variable
     if (bdy(ibdy)%using_hfx) then
        vals_nod_var8_dims(1) = num_nodes_dimid
        vals_nod_var8_dims(2) = time_step_dimid
        stat = nf_def_var(bdy(ibdy)%ofid, "vals_nod_var8", nf_double, 2, vals_nod_var8_dims , bdy(ibdy)%vals_nod_var8_id)
-       call ncderrcheck( __LINE__,stat)
+       call ncderrcheck( __FILE__, __LINE__,stat)
     endif
     
     ! name_nod_var variable
     name_nod_var_dims(1) = len_name_dimid
     name_nod_var_dims(2) = bdy(ibdy)%num_nod_var_dimid
     stat = nf_def_var(bdy(ibdy)%ofid, "name_nod_var", nf_char, 2, name_nod_var_dims , name_nod_var_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     ! End define mode
     stat = NF_ENDDEF(bdy(ibdy)%ofid)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
 
     !================================================================================
     ! Fill in some of the variables
@@ -234,7 +234,7 @@ contains
     info_records_count(1) = len(trim(info_records))        ! number of chars to write
     info_records_count(2) = 1                              ! only write one record
     stat = nf_put_vara_text(bdy(ibdy)%ofid, info_records_id, info_records_start, info_records_count, info_records)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     ! eb_names
     eb_names =  "block_101"
@@ -243,7 +243,7 @@ contains
     eb_names_count(1) = LEN(trim(eb_names))            ! number of chars to write
     eb_names_count(2) = 1                              ! only write one record
     stat = nf_put_vara_text(bdy(ibdy)%ofid, eb_names_id, eb_names_start, eb_names_count, eb_names)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     ! name_nod_var
     allocate(name_nod_var(num_vars))
@@ -259,43 +259,43 @@ contains
     name_nod_var_count(1) = LEN(trim(name_nod_var(1)))     ! number of chars to write
     name_nod_var_count(2) = 1                              ! only write one record
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(1))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 2
     name_nod_var_count(1) = LEN(trim(name_nod_var(2)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(2))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 3
     name_nod_var_count(1) = LEN(trim(name_nod_var(3)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(3))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 4
     name_nod_var_count(1) = LEN(trim(name_nod_var(4)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(4))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 5
     name_nod_var_count(1) = LEN(trim(name_nod_var(5)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(5))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 6
     name_nod_var_count(1) = LEN(trim(name_nod_var(6)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(6))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     name_nod_var_start(1) = 1
     name_nod_var_start(2) = 7
     name_nod_var_count(1) = LEN(trim(name_nod_var(7)))
     name_nod_var_count(2) = 1
     stat = nf_put_vara_text(bdy(ibdy)%ofid, name_nod_var_id, name_nod_var_start, name_nod_var_count, name_nod_var(7))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     if (bdy(ibdy)%using_hfx) then
        name_nod_var(8) = 'heat_flux'
        name_nod_var_start(1) = 1
@@ -364,7 +364,7 @@ contains
     
     ! Close the file
     stat = NF_CLOSE(bdy(ibdy)%ofid);
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     ! Deallocate
     deallocate(bdy(ibdy)%exo_wrf_i)
@@ -412,11 +412,11 @@ contains
     !================================================================================
     ! Read mesh coordinates
     stat = nf_get_var_real(bdy(ibdy)%ofid,bdy(ibdy)%coordx_id,bdy(ibdy)%coordx)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_get_var_real(bdy(ibdy)%ofid,bdy(ibdy)%coordy_id,bdy(ibdy)%coordy)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_get_var_real(bdy(ibdy)%ofid,bdy(ibdy)%coordz_id,bdy(ibdy)%coordz)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     !================================================================================
     ! Transform these to lat and lon with the offset
@@ -525,11 +525,11 @@ contains
 
     ! time_whole variable
     stat = NF_INQ_VARID(bdy(ibdy)%ofid,"time_whole", bdy(ibdy)%time_whole_id)
-    call ncderrcheck( __LINE__,stat)
+    call ncderrcheck( __FILE__, __LINE__,stat)
     count(1) = 1      ! number of doubles to write
     start(1) = itime  ! record to write
     stat = nf_put_vara_double(bdy(ibdy)%ofid, bdy(ibdy)%time_whole_id, start, count, dble(sec))
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     
     ! All other variables
     count(1) = bdy(ibdy)%num_nodes ! number of doubles to write
@@ -538,23 +538,23 @@ contains
     start(2) = itime               ! record number to write                        
 
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var1_id, start, count,bdy(ibdy)%vals_nod_var1)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var2_id, start, count,bdy(ibdy)%vals_nod_var2)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var3_id, start, count,bdy(ibdy)%vals_nod_var3)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var4_id, start, count,bdy(ibdy)%vals_nod_var4)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var5_id, start, count,bdy(ibdy)%vals_nod_var5)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var6_id, start, count,bdy(ibdy)%vals_nod_var6)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
     stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var7_id, start, count,bdy(ibdy)%vals_nod_var7)
-    call ncderrcheck( __LINE__ ,stat )
+    call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     if (bdy(ibdy)%using_hfx) then
        stat = nf_put_vara_real(bdy(ibdy)%ofid,bdy(ibdy)%vals_nod_var8_id, start, count,bdy(ibdy)%vals_nod_var8)
-       call ncderrcheck( __LINE__ ,stat )
+       call ncderrcheck( __FILE__, __LINE__ ,stat )
     endif
 
   end subroutine write_vars_exodus

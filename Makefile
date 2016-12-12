@@ -22,7 +22,8 @@ FC                 := ifort
 #================================================================================
 
 # Set to the path that contains the netecdf lib and include directories on your system
-NETCDFPATH         :=    /nopt/nrel/apps/netcdf/dist/netcdf
+#NETCDFPATH         := /nopt/nrel/apps/netcdf/dist/netcdf # peregrine default netcdf4
+NETCDFPATH         := $(shell spack location -i netcdf-fortran %intel)
 
 #================================================================================
 #
@@ -31,7 +32,7 @@ NETCDFPATH         :=    /nopt/nrel/apps/netcdf/dist/netcdf
 #================================================================================
 LD                 := $(FC)
 FCFLAGS            := -O3 -g
-LDFLAGS            := -lnetcdf
+LDFLAGS            := -lnetcdff
 INCLUDES           := -I$(NETCDFPATH)/include
 LIBS               := -L$(NETCDFPATH)/lib $(LIB)
 
@@ -65,10 +66,10 @@ module_exodus.o : module_exodus.F90 module_dm.o module_ncderrcheck.o module_utmd
 wrftonalu.o : wrftonalu.F90 module_dm.o module_constants.o module_ncderrcheck.o module_exodus.o
 	$(FC) -o $@ -c $(FCFLAGS) $(INCLUDES) $<
 
-$(BINNAME) : module_dm.o module_constants.o module_str2int.o module_ncderrcheck.o module_utmdeg_converter.o module_exodus.o wrftonalu.o 
+$(BINNAME) : module_dm.o module_constants.o module_str2int.o module_ncderrcheck.o module_utmdeg_converter.o module_exodus.o wrftonalu.o
 	$(LD) -o $@ $^ $(LIBS) $(LDFLAGS) $(LIB)
 
-doc : 
+doc :
 	@echo "Generating documentation with Doxygen."
 	doxygen Doxyfile
 

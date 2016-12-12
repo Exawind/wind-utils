@@ -16,16 +16,18 @@ contains
   !--------------------------------------------------------------------------------
   !
   !> @brief Check for netCDF function error
+  !> @param fname  file name
   !> @param lineno line number of error
-  !> @param stat error status
+  !> @param stat   error status
   !
   !--------------------------------------------------------------------------------
-  SUBROUTINE ncderrcheck( lineno, stat )
+  SUBROUTINE ncderrcheck( fname, lineno, stat )
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
+    CHARACTER(*), INTENT(IN) :: fname
     INTEGER, INTENT(IN) :: lineno,stat
     IF ( stat .NE. NF_NOERR ) THEN
-       WRITE(0,*)'Line ',lineno,NF_STRERROR(stat)
+       WRITE(0,*)'netCDF error at file: ',fname,', line number:',lineno,NF_STRERROR(stat)
        STOP 99
     ENDIF
   END SUBROUTINE ncderrcheck

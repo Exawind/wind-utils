@@ -181,19 +181,19 @@ PROGRAM wrftonalu
   DO i = 1, nfiles
      WRITE(0,*)'opening : flnm(i) ',i,TRIM(flnm(i))
      stat = NF_OPEN(flnm(i), NF_NOWRITE, ncid(i))
-     CALL ncderrcheck( __LINE__ ,stat )
+     CALL ncderrcheck( __FILE__, __LINE__ ,stat )
      stat=NF_GET_ATT_REAL(ncid(i),NF_GLOBAL,'DX',dx) ;
      IF( i .EQ. 1 ) dx_check = dx
-     CALL ncderrcheck( __LINE__,stat )
+     CALL ncderrcheck( __FILE__, __LINE__,stat )
      stat = NF_GET_ATT_INT (ncid(i),NF_GLOBAL,'WEST-EAST_PATCH_END_STAG',ide) ; ids = 1 ;
      IF( i .EQ. 1 ) ide_check = ide
-     CALL ncderrcheck( __LINE__,stat )
+     CALL ncderrcheck( __FILE__, __LINE__,stat )
      stat = NF_GET_ATT_INT (ncid(i),NF_GLOBAL,'SOUTH-NORTH_PATCH_END_STAG',jde) ; jds = 1 ;
      IF( i .EQ. 1 ) jde_check = jde
-     CALL ncderrcheck( __LINE__,stat )
+     CALL ncderrcheck( __FILE__, __LINE__,stat )
      stat = NF_GET_ATT_INT (ncid(i),NF_GLOBAL,'BOTTOM-TOP_PATCH_END_STAG',kde) ; kds = 1 ;
      IF( i .EQ. 1 ) kde_check = kde
-     CALL ncderrcheck( __LINE__,stat )
+     CALL ncderrcheck( __FILE__, __LINE__,stat )
      IF ( i .GT. 1 ) THEN
         stat = 0
         IF ( dx .NE. dx_check ) THEN
@@ -217,15 +217,15 @@ PROGRAM wrftonalu
 
   ! Get info from the Times variable
   stat = NF_INQ_VARID(ncid,'Times',varid) ! get ID of variable Times
-  CALL ncderrcheck( __LINE__,stat)
+  CALL ncderrcheck( __FILE__, __LINE__,stat)
   stat = NF_INQ_VAR(ncid,varid,vname,xtype,storeddim,dimids,natts) ! get all information about Times
-  CALL ncderrcheck( __LINE__,stat)
+  CALL ncderrcheck( __FILE__, __LINE__,stat)
   stat = NF_INQ_DIMLEN(ncid,dimids(1),cnt(1))
-  CALL ncderrcheck( __LINE__,stat)
+  CALL ncderrcheck( __FILE__, __LINE__,stat)
   stat = NF_INQ_DIMLEN(ncid,dimids(2),cnt(2))
-  CALL ncderrcheck( __LINE__,stat)
+  CALL ncderrcheck( __FILE__, __LINE__,stat)
   stat = NF_GET_VARA_TEXT(ncid,varid,strt,cnt,Times) ! read in the Times data in the Times text
-  CALL ncderrcheck( __LINE__,stat )
+  CALL ncderrcheck( __FILE__, __LINE__,stat )
   ntimes = cnt(2)
   
   ! Allocate a lot of variables
