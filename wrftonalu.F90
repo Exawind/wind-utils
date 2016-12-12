@@ -35,7 +35,7 @@ PROGRAM wrftonalu
   INTEGER, PARAMETER :: MAXFILES = 20
   CHARACTER(LEN=255) :: flnm(MAXFILES),arg,vname,comstr
   CHARACTER(LEN=19) :: Times(100),tmpstr,secstr
-  LOGICAL ic, ctrl, have_hfx, use_hfx ! whether or not to do an IC file too
+  LOGICAL ic, ic_is_written, ctrl, have_hfx, use_hfx ! whether or not to do an IC file too
   INTEGER it,itime,ntimes,ncid(MAXFILES),stat,iarg,narg,varid,strt(4),cnt(4),xtype,storeddim,dimids(4),natts
   REAL, EXTERNAL :: finterp
   INTEGER, EXTERNAL :: sec_of_day
@@ -93,6 +93,7 @@ PROGRAM wrftonalu
   !================================================================================
 
   ic = .FALSE.
+  ic_is_written = .FALSE.
   use_hfx = .FALSE.
   it = 1
   itime  = 1
@@ -386,6 +387,10 @@ PROGRAM wrftonalu
      ! Interpolation
      do ibdy = 1, nbdys
         if (exo_exists(ibdy)) then
+
+           ! Only write the interior once
+           if ( ibdy .eq. interior .and. ic_is_written) cycle
+           
            ! Interpolation to WRF data
            do ipoint = 1, bdy(ibdy)%num_nodes
 
@@ -459,7 +464,7 @@ PROGRAM wrftonalu
               bdy(ibdy)%vals_nod_var7(ipoint) = w_new
 
               ! heat flux if we want it
-              if ( bdy(ibdy)%using_hfx) then
+              if ( bdy(ibdy)%using_hfx ) then
                  kzz = 0 ! turn off vertical interpolation in call to finterp
                  hfx_new = finterp(hfx,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,1,1, ips,ipe-1,jps,jpe-1)
                  rho0 = pres(i,j,1) / ( R_D * t_ground )
@@ -473,6 +478,9 @@ PROGRAM wrftonalu
            ! Write out variables to the file
            call write_vars_exodus( ibdy, itime, sec )
 
+           ! Only write the interior once
+           if ( ibdy .eq. interior) ic_is_written = .true.
+           
         endif
      enddo
   enddo
