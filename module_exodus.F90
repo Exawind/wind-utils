@@ -256,13 +256,15 @@ contains
     call ncderrcheck( __FILE__, __LINE__ ,stat )
 
     ! eb_names
-    eb_names =  "block_101"
-    eb_names_start(1) = 1                              ! start at beginning of variable
-    eb_names_start(2) = 1                              ! record number to write
-    eb_names_count(1) = LEN(trim(eb_names))            ! number of chars to write
-    eb_names_count(2) = 1                              ! only write one record
-    stat = nf_put_vara_text(bdy(ibdy)%ofid, eb_names_id, eb_names_start, eb_names_count, eb_names)
-    call ncderrcheck( __FILE__, __LINE__ ,stat )
+    if (ibdy .ne. interior) then
+       eb_names =  "block_101"
+       eb_names_start(1) = 1                              ! start at beginning of variable
+       eb_names_start(2) = 1                              ! record number to write
+       eb_names_count(1) = LEN(trim(eb_names))            ! number of chars to write
+       eb_names_count(2) = 1                              ! only write one record
+       stat = nf_put_vara_text(bdy(ibdy)%ofid, eb_names_id, eb_names_start, eb_names_count, eb_names)
+       call ncderrcheck( __FILE__, __LINE__ ,stat )
+    endif
 
     ! name_nod_var
     allocate(name_nod_var(num_vars))
