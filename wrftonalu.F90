@@ -160,9 +160,16 @@ PROGRAM wrftonalu
 
   ! meshfiles and exodus output files
   do ibdy = 1, nbdys
+
      meshname(ibdy) = trim(bdynames(ibdy))//'.g'
      ofname(ibdy)   = trim(bdynames(ibdy))//'.e'
      inquire(file=trim(meshname(ibdy)), exist = exo_exists(ibdy))
+
+     ! short circuit if we do not want to generate interior file
+     if ( ibdy .eq. interior .and. .not. ic ) then
+        exo_exists(ibdy) = .FALSE.
+        cycle
+     endif
 
      ! Copy the mesh file to an output file (if it exists)
      if (exo_exists(ibdy)) then
