@@ -76,7 +76,8 @@ PROGRAM wrftonalu
 
   ! Exodus mesh (lat,lon) offset
   logical :: coord_offset
-  real :: exo_lat_offset(1), exo_lon_offset(1)
+  real :: exo_lat_offset(1), exo_lon_offset(1), dmin, dsw
+  integer :: exo_i_offset, exo_j_offset
 
   ! lat and lon of desired exodus point
   double precision exo_lat, exo_lon, exo_lz
@@ -272,6 +273,23 @@ PROGRAM wrftonalu
      endif
   endif
 
+  ! Find (i,j) point correpsonding to this (0,0)
+  ! really only for diagnostic purposes
+  dmin = 999999.9
+  ! loop on WRF data
+  do j = jps,min(jpe,jde-2)
+     do i = ips,min(ipe,ide-2)
+        dsw = sqrt((exo_lat_offset(1)-xlat(i ,j ))*(exo_lat_offset(1)-xlat(i ,j )) + (exo_lon_offset(1)-xlong(i ,j ))*(exo_lon_offset(1)-xlong(i ,j )))
+        if ( dsw .lt. dmin .and. exo_lat_offset(1) .ge. xlat(i,j) .and. exo_lon_offset(1) .ge. xlong(i,j) ) then
+           exo_i_offset = i
+           exo_j_offset = j
+           dmin = dsw
+        endif
+     enddo
+  enddo
+  write(0,*)"Exodus offset (lat,lon) = ", exo_lat_offset(1), exo_lon_offset(1)
+  write(0,*)"     corresponding to WRF (i,j) = ", exo_i_offset, exo_j_offset
+
   theta = rotation_angle ( xlat,dx,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
   ! Computed theta is counterclockwise rotation in radians of the vector from X axis, so negate and
   ! convert to degrees for reporting rotation with respect to compass points
@@ -412,7 +430,7 @@ PROGRAM wrftonalu
                  ENDDO
               ENDDO
 
-              ! find the level index of the exodu point in WRF, both in the full-level
+              ! find the level index of the exodus point in WRF, both in the full-level
               ! and half-level ranges. Lowest index is closest to surface. Also store the
               ! indices for the 3 neighbors to the north, east, and northeast, since these
               ! are needed for horizontally interpolating in the finterp function
@@ -433,13 +451,13 @@ PROGRAM wrftonalu
               ENDDO
 
               !variables on half-levels exodus coords dims of field dims of lat lon arrays
-              u_new = finterp(u ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-              v_new = finterp(v ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-              t_new = finterp(t ,zcol ,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              u_new    = finterp(u   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              v_new    = finterp(v   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              t_new    = finterp(t   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
               pres_new = finterp(pres,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
 
               !variables on full-levels exodus coords dims of field dims of lat lon arrays
-              w_new = finterp(w ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe , ips,ipe-1,jps,jpe-1)
+              w_new    = finterp(w   ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe  , ips,ipe-1,jps,jpe-1)
               t_ground = t(i,j,1)
               ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
               ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
