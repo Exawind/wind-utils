@@ -95,6 +95,8 @@ void NDTW2D::load(const YAML::Node& node)
 
 void NDTW2D::generate_meta()
 {
+    ThrowAssertMsg(meta_.spatial_dimension() == ndim_,
+                   "Near wall distance calculation only supported for 2-D meshes");
     std::cout << "Registering fields to metadata..." << std::endl;
     VectorFieldType& coords = meta_.declare_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
@@ -125,6 +127,7 @@ void NDTW2D::calc_ndtw()
     ScalarFieldType* ndtw = meta_.get_field<ScalarFieldType>(
         stk::topology::NODE_RANK, wall_dist_name_);
 
+    std::cout << "Calculating nearest wall distance... " << std::endl;
     for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
         stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
         double* xyz = stk::mesh::field_data(*coords, fbkt);
@@ -163,6 +166,7 @@ void NDTW2D::run()
     calc_ndtw();
 
     // Dump the wall distance into the output mesh database
+    std::cout << "Writing updated mesh database..." << std::endl;
     stkIo_->begin_output_step(fh, 0.0);
     stkIo_->write_defined_output_fields(fh);
     stkIo_->end_output_step(fh);
