@@ -1,0 +1,20 @@
+
+calc_ndtw2d:
+  input_db: AoA2.exo
+  output_db: AoA2_NDTW.exo
+
+  fluid_parts: 
+    - Unspecified-2-QUAD
+    - Unspecified-3-QUAD
+    - Unspecified-4-QUAD
+    - Unspecified-5-QUAD
+    - Unspecified-6-QUAD
+    - Unspecified-7-QUAD
+    - Unspecified-8-QUAD
+    - Unspecified-9-QUAD
+    - Unspecified-10-QUAD
+    - Unspecified-11-QUAD
+
+  wall_parts:
+    - airfoil
+
