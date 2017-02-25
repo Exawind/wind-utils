@@ -1,6 +1,13 @@
 #ifndef LINEARINTERPOLATION_H
 #define LINEARINTERPOLATION_H
 
+/** \file LinearInterpolation.h
+ *  1-D linear interpolation utilities
+ *
+ *  This file implements a single public API method `linear_interp` that is used
+ *  to perform piecewise linear interpolations.
+ */
+
 #include <iostream>
 #include <vector>
 #include <stdexcept>
@@ -10,6 +17,8 @@ namespace sierra {
 namespace nalu {
 namespace utils {
 
+/** Flags and actions for out-of-bounds operation
+ */
 struct OutOfBounds
 {
   //! Out of bounds limit types
@@ -90,6 +99,12 @@ find_index(const Array1D<T>& xinp, const T& x)
 
 /**
  * Perform a 1-D linear interpolation
+ *
+ * \param xinp A 1-d vector of x-values
+ * \param yinp Corresponding 1-d vector of y-values
+ * \param xout Target x-value for interpolation
+ * \param yout Interpolated value at `xout`
+ * \param oob  (Optional) Out-of-bounds handling (default: CLAMP)
  */
 template <typename T>
 void

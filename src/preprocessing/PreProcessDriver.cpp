@@ -1,9 +1,14 @@
 
 #include "PreProcessDriver.h"
+#include <iostream>
 
 namespace sierra {
 namespace nalu {
 
+/**
+ * \param comm MPI Communicator reference
+ * \param filename Name of the YAML input file
+ */
 PreProcessDriver::PreProcessDriver
 (
     stk::ParallelMachine& comm,

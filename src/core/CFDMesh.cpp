@@ -9,6 +9,10 @@
 namespace sierra {
 namespace nalu {
 
+/**
+ * \param comm MPI Communicator object
+ * \param filename Exodus database filename
+ */
 CFDMesh::CFDMesh
 (
     stk::ParallelMachine& comm,
@@ -30,6 +34,10 @@ CFDMesh::CFDMesh
     stk::mesh::put_field(coords, meta_.universal_part(), meta_.spatial_dimension());
 }
 
+/**
+ * \param output_db Filename for the output Exodus database
+ * \param time (Optional) time to write (default = 0.0)
+ */
 void CFDMesh::write_database
 (
     std::string output_db,

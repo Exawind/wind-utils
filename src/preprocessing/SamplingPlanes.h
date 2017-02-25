@@ -6,6 +6,32 @@
 namespace sierra {
 namespace nalu {
 
+/** Generate 2-D grids/planes for data sampling
+ *
+ * Currently only generates horizontal planes at user-defined heights.
+ *
+ * Requires a section `generate_planes` in the input file within the
+ * `nalu_preprocess` section:
+ *
+ * ```
+ * generate_planes:
+ *   fluid_part: Unspecified-2-hex
+ *
+ *   heights: [ 70.0 ]
+ *   part_name_format: "zplane_%06.1f"
+ *
+ *   dx: 12.0
+ *   dy: 12.0
+ * ```
+ *
+ * `part_name_format` is a printf-like format specification that takes one
+ * argument - the height as a floating point number. The user can use this to
+ * tailor how the nodesets or the shell parts are named in the output Exodus
+ * file.
+ *
+ * \todo Handle generation of planes in any direction
+ * \todo Enable user option to select node_set or shell topology
+ */
 class SamplingPlanes: public PreProcessingTask
 {
 public:

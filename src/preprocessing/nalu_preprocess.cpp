@@ -1,4 +1,13 @@
 
+/** \file
+ *
+ * Nalu Preprocessing Utility
+ *
+ * Usage:
+ *    `mpiexec -np 1 nalu_preprocess -i nalu_preprocess.yaml`
+ *
+ */
+
 #include "preprocessing/PreProcessDriver.h"
 
 #include "stk_util/parallel/Parallel.hpp"

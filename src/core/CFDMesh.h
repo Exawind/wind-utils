@@ -19,6 +19,11 @@ namespace nalu {
 typedef stk::mesh::Field<double, stk::mesh::Cartesian> VectorFieldType;
 typedef stk::mesh::Field<double> ScalarFieldType;
 
+/** STK Mesh interface
+ *
+ *  This class provides a thin wrapper around the STK mesh objects (MetaData,
+ *  BulkData, and StkMeshIoBroker) for use with various preprocessing utilities.
+ */
 class CFDMesh
 {
 public:
