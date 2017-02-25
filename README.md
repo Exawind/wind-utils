@@ -1,9 +1,26 @@
 
-# Misc. Nalu Wind Energy Utilities
+# Nalu Wind Energy Utilities
 
-- `gen_zplanes` : Generate sampling planes at given heights for ABL forcing algorithm
-- `ndtw2d` : Brute-force wall distance calculation algorithm for 2-D airfoils
+This repository contains various pre- and post-processing utilities to be used
+with Nalu CFD solver. 
 
+## Pre-processing utilities
+
+The preprocessor `nalu_preprocess` can perform various tasks on an exodus input
+mesh database. See `examples/nalu_preprocess.yaml` for an example input deck.
+Currently, the following preprocessor options are available.
+
+**3-D Utilities**
+
+- `init_abl_fields` : Initialize ABL velocity and temperature profiles based on
+  user-defined tables.
+- `generate_planes` : Generate horizontal sampling planes at desired heights for
+  averaging statistics or source terms to drive ABL profiles.
+
+**2-D Utilities**
+
+- `calc_ndtw2d` : Calculate the nearest distance to wall for a 2-D airfoil-like
+  geometry for use with RANS wall models.
 
 # Build instructions
 
@@ -17,3 +34,10 @@
   ./doconfig.sh
   make
   ```
+
+Once compiled, the executables are available in `build/preprocessing/` directory. For
+example, `build/preprocessing/nalu_preprocess`. Example execution
+
+```
+mpiexec -np 1 preprocessing/nalu_preprocess -i nalu_preprocess.yaml
+```
