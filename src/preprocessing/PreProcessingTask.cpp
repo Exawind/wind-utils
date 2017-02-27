@@ -33,13 +33,13 @@ PreProcessingTask::create(
     }
 
     const YAML::Node& inp = node[lookup];
-    auto it = PreProcessingTaskReg_ConstructorTable_.find(lookup);
-    if (it != PreProcessingTaskReg_ConstructorTable_.end()) {
+    auto it = PreProcessingTaskReg_ConstructorTable_->find(lookup);
+    if (it != PreProcessingTaskReg_ConstructorTable_->end()) {
         return (it->second)(mesh, inp);
     } else {
         std::cerr << "ERROR: Invalid PreProcessingTask => " << lookup << std::endl;
         std::cerr << "Valid task types are: " << std::endl;
-        for (const auto& t: PreProcessingTaskReg_ConstructorTable_) {
+        for (const auto& t: *PreProcessingTaskReg_ConstructorTable_) {
             std::cerr << "\t" << t.first << std::endl;
         }
     }

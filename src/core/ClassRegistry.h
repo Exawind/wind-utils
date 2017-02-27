@@ -38,7 +38,10 @@
     using baseCls##Reg_create_t = baseCls* (*)argList;                                    \
     using baseCls##Reg_Table_t = std::unordered_map<std::string, baseCls##Reg_create_t>;  \
                                                                                           \
-    static baseCls##Reg_Table_t baseCls##Reg_ConstructorTable_;                           \
+    static baseCls##Reg_Table_t* baseCls##Reg_ConstructorTable_;                          \
+                                                                                          \
+    static void baseCls##Reg_TableInit() ;                                                \
+    static void baseCls##Reg_TableDestory();                                              \
                                                                                           \
     template<typename T>                                                                  \
     class baseCls##Reg_TableAdder                                                         \
@@ -52,12 +55,13 @@
         baseCls##Reg_TableAdder(std::string lookup)                                       \
             : lookup_(lookup)                                                             \
         {                                                                                 \
-            baseCls##Reg_ConstructorTable_[lookup] = create;                              \
+            baseCls##Reg_TableInit();                                                     \
+            (*baseCls##Reg_ConstructorTable_)[lookup] = create;                           \
         }                                                                                 \
                                                                                           \
         ~baseCls##Reg_TableAdder()                                                        \
         {                                                                                 \
-            baseCls##Reg_ConstructorTable_.erase(lookup_);                                \
+            baseCls##Reg_ConstructorTable_->erase(lookup_);                               \
         }                                                                                 \
                                                                                           \
     private:                                                                              \
@@ -66,7 +70,23 @@
 
 //! Initialize the static members of class registration infrastructure
 #define DEFINE_INHERITANCE_REGISTRY(baseCls)                                              \
-    baseCls::baseCls##Reg_Table_t baseCls::baseCls##Reg_ConstructorTable_
+    baseCls::baseCls##Reg_Table_t* baseCls::baseCls##Reg_ConstructorTable_ = nullptr;     \
+                                                                                          \
+    void baseCls::baseCls##Reg_TableInit()                                                \
+    {                                                                                     \
+        static bool constructed=false;                                                    \
+        if (!constructed) {                                                               \
+            baseCls::baseCls##Reg_ConstructorTable_ = new baseCls::baseCls##Reg_Table_t;  \
+            constructed = true;                                                           \
+        }                                                                                 \
+    }                                                                                     \
+    void baseCls::baseCls##Reg_TableDestory()                                             \
+    {                                                                                     \
+        if (baseCls::baseCls##Reg_ConstructorTable_) {                                    \
+            delete baseCls::baseCls##Reg_ConstructorTable_;                               \
+            baseCls::baseCls##Reg_ConstructorTable_ = nullptr;                            \
+        }                                                                                 \
+    }
 
 //! Convenience wrapper to register subclass to base class
 #define REGISTER_DERIVED_CLASS(baseCls, subClass, lookup)                                 \
