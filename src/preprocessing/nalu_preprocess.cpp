@@ -70,5 +70,6 @@ int main(int argc, char** argv)
     sierra::nalu::PreProcessDriver preprocess(comm, inpfile);
     preprocess.run();
 
+    stk::parallel_machine_finalize();
     return 0;
 }
