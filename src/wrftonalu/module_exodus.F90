@@ -10,6 +10,8 @@
 !
 !> @date 01/12/2016 J. Michalakes and M. Churchfield
 !> - Initial version from WRFTOOOF
+!
+!> @file
 ! 
 !------------------------------------------------------------------------------
 
@@ -20,6 +22,7 @@ module module_exodus
   use module_utmdeg_converter
   implicit none
 
+  !> Body type
   type bdy_t
      logical using_hfx
      integer num_nodes
@@ -124,7 +127,7 @@ contains
     write(  dd,'(i2)') date_values(3)
     write(  mm,'(i2)') date_values(2)
     write(yyyy,'(i4)') date_values(1)
-    write(date_str,*),dd,'/',mm,'/',yyyy
+    write(date_str,*)dd,'/',mm,'/',yyyy
 
     !================================================================================
     ! Get mesh information

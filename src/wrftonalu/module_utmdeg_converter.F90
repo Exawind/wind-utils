@@ -16,7 +16,8 @@
 !> href="https://www.mathworks.com/matlabcentral/fileexchange/10915-deg2utm">deg2utm</a>
 !> matlab functions.  All credit goes to Rafael Palacios and Gabriel Ruiz Martinez.
 !
-! 
+!> @file
+!
 !------------------------------------------------------------------------------
 
 
@@ -111,7 +112,9 @@ CONTAINS
     Delt(:) = atan(senoheps(:) / cos(nab(:)) )
     TaO(:) = atan(cos(Delt(:)) * tan(nab(:)))
 
-    lat = ( latnum(:) + ( 1.d0 + e22* (cos(latnum(:))**2) - ( 3.d0 / 2.d0 ) * e22 * sin(latnum(:)) * cos(latnum(:)) * ( TaO(:) - latnum(:) ) ) &
+    lat = ( latnum(:) + ( 1.d0 &
+         + e22* (cos(latnum(:))**2) &
+         - ( 3.d0 / 2.d0 ) * e22 * sin(latnum(:)) * cos(latnum(:)) * ( TaO(:) - latnum(:) ) ) &
          * ( TaO(:) - latnum(:) ) ) *  (180.d0 / pi)
     lon = Delt(:) *(180.d0 / pi )  + S
 

@@ -10,6 +10,8 @@
 !
 !> @date 01/12/2016 J. Michalakes and M. Churchfield
 !> - Initial version from WRFTOOOF
+!
+!> @file
 ! 
 !------------------------------------------------------------------------------
 
@@ -279,7 +281,8 @@ PROGRAM wrftonalu
   ! loop on WRF data
   do j = jps,min(jpe,jde-2)
      do i = ips,min(ipe,ide-2)
-        dsw = sqrt((exo_lat_offset(1)-xlat(i ,j ))*(exo_lat_offset(1)-xlat(i ,j )) + (exo_lon_offset(1)-xlong(i ,j ))*(exo_lon_offset(1)-xlong(i ,j )))
+        dsw = sqrt((exo_lat_offset(1)-xlat(i ,j )) * (exo_lat_offset(1)-xlat(i ,j )) &
+             + (exo_lon_offset(1)-xlong(i ,j ))*(exo_lon_offset(1)-xlong(i ,j )))
         if ( dsw .lt. dmin .and. exo_lat_offset(1) .ge. xlat(i,j) .and. exo_lon_offset(1) .ge. xlong(i,j) ) then
            exo_i_offset = i
            exo_j_offset = j
@@ -293,7 +296,7 @@ PROGRAM wrftonalu
   theta = rotation_angle ( xlat,dx,ids,ide,jds,jde,ips,ipe,jps,jpe,ims,ime,jms,jme )
   ! Computed theta is counterclockwise rotation in radians of the vector from X axis, so negate and
   ! convert to degrees for reporting rotation with respect to compass points
-  write(*,'("WRF grid is clockwise rotated approx.",f9.5," deg. from true lat/lon. Compensating.")'),-theta*57.2957795
+  write(*,'("WRF grid is clockwise rotated approx.",f9.5," deg. from true lat/lon. Compensating.")')-theta*57.2957795
   costheta = cos(theta)
   sintheta = sin(theta)
 
@@ -451,13 +454,18 @@ PROGRAM wrftonalu
               ENDDO
 
               !variables on half-levels exodus coords dims of field dims of lat lon arrays
-              u_new    = finterp(u   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-              v_new    = finterp(v   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-              t_new    = finterp(t   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
-              pres_new = finterp(pres,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              u_new    = finterp(u   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,&
+                   i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              v_new    = finterp(v   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,&
+                   i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              t_new    = finterp(t   , zcol,xlat,xlong,kz ,exo_lat,exo_lon,exo_lz,&
+                   i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
+              pres_new = finterp(pres,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,&
+                   i,j,ips,ipe-1,jps,jpe-1,kps,kpe-1, ips,ipe-1,jps,jpe-1)
 
               !variables on full-levels exodus coords dims of field dims of lat lon arrays
-              w_new    = finterp(w   ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,i,j,ips,ipe-1,jps,jpe-1,kps,kpe  , ips,ipe-1,jps,jpe-1)
+              w_new    = finterp(w   ,zzcol,xlat,xlong,kzz,exo_lat,exo_lon,exo_lz,&
+                   i,j,ips,ipe-1,jps,jpe-1,kps,kpe  , ips,ipe-1,jps,jpe-1)
               t_ground = t(i,j,1)
               ! compute "pd" which is defined as pressure divided by density at surface minus geopotential
               ! that is, pd = p / rho - g*z . Note, however, that we don.t have density so compute density at
@@ -617,7 +625,11 @@ SUBROUTINE help
   IMPLICIT NONE
   CHARACTER(LEN=120) :: cmd
   CALL getarg(0, cmd)
-  WRITE(*,'(/,"Usage: ", A, " ncdfile [ncdfiles*] [-startdate startdate [-offset offset] [-coord_offset lat lon]] [-ic] [-qwall]")') trim(cmd)
+  WRITE(*,'(/,"Usage: ", A, " ncdfile [ncdfiles*] &
+       [-startdate startdate [-offset offset] &
+       [-coord_offset lat lon]] &
+       [-ic] &
+       [-qwall]")') trim(cmd)
   WRITE(*,'("       startdate     date string of form yyyy-mm-dd_hh_mm_ss or yyyy-mm-dd_hh:mm:ss")')
   WRITE(*,'("       offset        number of seconds to start Exodus directory naming (default: 0)")')
   WRITE(*,'("       lat           latitude of origin for the Exodus mesh (default: center of WRF data)")')
