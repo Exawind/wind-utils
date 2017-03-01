@@ -48,3 +48,13 @@ do this should be in the run directory and named `west.g`, `east.g`,
 those files can exist). The ouput will be `west.nc`, `east.nc`,
 `south.nc`, `north.nc`, `lower.nc`, and `upper.nc` files containing
 the interpolated WRF data on the Exodus mesh for input into Nalu.
+
+```
+Usage: ./wrftonalu ncdfile [ncdfiles*] [-startdate startdate [-offset offset] [-coord_offset lat lon]] [-ic] [-qwall]
+       startdate     date string of form yyyy-mm-dd_hh_mm_ss or yyyy-mm-dd_hh:mm:ss
+       offset        number of seconds to start Exodus directory naming (default: 0)
+       lat           latitude of origin for the Exodus mesh (default: center of WRF data)
+       lon           longitude of origin for the Exodus mesh (default: center of WRF data)
+       -ic           program should generate init conditions too
+       -qwall        program should generate temp flux in lower bc file
+```
