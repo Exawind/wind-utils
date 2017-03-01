@@ -22,7 +22,11 @@ Currently, the following preprocessor options are available.
 - `calc_ndtw2d` : Calculate the nearest distance to wall for a 2-D airfoil-like
   geometry for use with RANS wall models.
 
-# Build instructions
+## WRF to Nalu conversion
+
+See [these instructions](./src/wrftonalu/README.md).
+
+## Build instructions
 
   ```
   git clone <repo_url>

@@ -266,7 +266,7 @@ OPTIMIZE_OUTPUT_JAVA   = NO
 # sources. Doxygen will then generate output that is tailored for Fortran.
 # The default value is: NO.
 
-OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_FOR_FORTRAN   = YES
 
 # Set the OPTIMIZE_OUTPUT_VHDL tag to YES if your project consists of VHDL
 # sources. Doxygen will then generate output that is tailored for VHDL.
@@ -792,6 +792,7 @@ WARN_LOGFILE           =
 
 INPUT                  = ../../src/core \
                          ../../src/preprocessing \
+                         ../../src/wrftonalu \
                          ../../README.md
 
 # This tag can be used to specify the character encoding of the source files
@@ -851,6 +852,7 @@ FILE_PATTERNS          = *.c \
                          *.py \
                          *.pyw \
                          *.f90 \
+			 *.F90 \
                          *.f95 \
                          *.f03 \
                          *.f08 \
