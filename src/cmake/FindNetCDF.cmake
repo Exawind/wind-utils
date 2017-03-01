@@ -1,3 +1,9 @@
+#
+# This file was copied from the VTK repository: 
+# https://github.com/Kitware/VTK/blob/master/CMake/FindNetCDF.cmake
+# VTK is distributed under the OSI-approved BSD 3-clause License.
+#
+#
 # - Find NetCDF
 # Find the native NetCDF includes and library
 #
