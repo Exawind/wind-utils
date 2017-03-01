@@ -16,7 +16,8 @@
 !> href="https://www.mathworks.com/matlabcentral/fileexchange/10915-deg2utm">deg2utm</a>
 !> matlab functions.  All credit goes to Rafael Palacios and Gabriel Ruiz Martinez.
 !
-! 
+!> @file
+!
 !------------------------------------------------------------------------------
 
 

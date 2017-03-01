@@ -13,6 +13,7 @@
 !> href="http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90">Stack
 !> Overflow</a>
 !
+!> @file
 ! 
 !------------------------------------------------------------------------------
 
