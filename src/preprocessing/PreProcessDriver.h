@@ -61,6 +61,9 @@ private:
 
     //! Name of the output database
     std::string output_db_;
+
+    //! Flag indicating whether 8-bit integer API must be activated
+    bool io_8bit_int_{false};
 };
 
 } // nalu

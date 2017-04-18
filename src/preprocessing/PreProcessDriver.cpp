@@ -34,8 +34,16 @@ PreProcessDriver::PreProcessDriver
     std::string input_db = data["input_db"].as<std::string>();
     output_db_ = data["output_db"].as<std::string>();
 
+    if (data["ioss_8bit_ints"]) {
+        io_8bit_int_ = data["ioss_8bit_ints"].as<bool>();
+    }
+
     mesh_.reset(new CFDMesh(comm, input_db));
 
+    if (io_8bit_int_) {
+        mesh_->stkio().property_add(Ioss::Property("INTEGER_SIZE_DB",8));
+        mesh_->stkio().property_add(Ioss::Property("INTEGER_SIZE_API",8));
+    }
     auto task_names = data["tasks"].as<std::vector<std::string>>();
 
     tasks_.resize(task_names.size());
