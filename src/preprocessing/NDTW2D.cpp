@@ -31,6 +31,9 @@ NDTW2D::NDTW2D(
     wall_dist_name_("NDTW"),
     ndim_(meta_.spatial_dimension())
 {
+    // This is a temporary utility that is not scalable
+    if (bulk_.parallel_size() > 1)
+        throw std::runtime_error("NDTW2D is not a parallel utility");
     load(node);
 }
 

@@ -20,6 +20,7 @@
 
 #include <stk_util/parallel/Parallel.hpp>
 #include <stk_util/parallel/BroadcastArg.hpp>
+#include <stk_util/parallel/ParallelReduce.hpp>
 
 #include <stk_mesh/base/FindRestriction.hpp>
 #include <stk_mesh/base/MetaData.hpp>
@@ -54,7 +55,8 @@ SamplingPlanes::SamplingPlanes(
     heights_(0),
     bBox_(),
     name_format_(),
-    fluidPart_(),
+    fluidPartNames_(),
+    fluidParts_(),
     dx_(0.0),
     dy_(0.0),
     nx_(0),
@@ -70,7 +72,13 @@ SamplingPlanes::SamplingPlanes(
 
 void SamplingPlanes::load(const YAML::Node& zp)
 {
-    fluidPart_ = zp["fluid_part"].as<std::string>();
+    const auto& fParts = zp["fluid_part"];
+    if (fParts.Type() == YAML::NodeType::Scalar) {
+        fluidPartNames_.push_back(fParts.as<std::string>());
+    } else {
+        fluidPartNames_ = fParts.as<std::vector<std::string>>();
+    }
+
     heights_ = zp["heights"].as<std::vector<double>>();
     name_format_ = zp["part_name_format"].as<std::string>();
     dx_ = zp["dx"].as<double>();
@@ -79,13 +87,19 @@ void SamplingPlanes::load(const YAML::Node& zp)
 
 void SamplingPlanes::initialize()
 {
-    stk::mesh::Part* part = meta_.get_part(fluidPart_);
-    if (NULL == part) {
-        throw std::runtime_error(
-            "SamplingPlanes: Fluid realm not found in mesh database.");
+    const auto iproc = bulk_.parallel_rank();
+    for (auto pName: fluidPartNames_){
+        stk::mesh::Part* part = meta_.get_part(pName);
+        if (NULL == part) {
+            throw std::runtime_error(
+                "SamplingPlanes: Fluid realm not found in mesh database.");
+        } else {
+            fluidParts_.push_back(part);
+        }
     }
 
-    std::cerr << "SamplingPlanes: Registering parts to meta data:" << std::endl;
+    if (iproc == 0)
+        std::cerr << "SamplingPlanes: Registering parts to meta data:" << std::endl;
     for(auto zh: heights_) {
         std::string pName = (boost::format(name_format_)%zh).str();
         stk::mesh::Part* part_check = meta_.get_part(pName);
@@ -94,10 +108,11 @@ void SamplingPlanes::initialize()
                 "SamplingPlanes: Cannot overwrite existing part in database: "+ pName);
         } else {
             stk::mesh::Part& part = meta_.declare_part(
-                pName, stk::topology::ELEMENT_RANK);
+                pName, stk::topology::NODE_RANK);
             stk::io::put_io_part_attribute(part);
-            stk::mesh::set_topology(part, stk::topology::SHELL_QUAD_4);
-            std::cerr << "\t " << pName << std::endl;
+            // stk::mesh::set_topology(part, stk::topology::SHELL_QUAD_4);
+
+            if (iproc == 0) std::cerr << "\t " << pName << std::endl;
 
             VectorFieldType* coords = meta_.get_field<VectorFieldType>(
                 stk::topology::NODE_RANK, "coordinates");
@@ -110,6 +125,7 @@ void SamplingPlanes::run()
 {
     calc_bounding_box();
 
+    stk::parallel_machine_barrier(bulk_.parallel());
     for (auto zh: heights_) {
         generate_zplane(zh);
     }
@@ -117,18 +133,20 @@ void SamplingPlanes::run()
 
 void SamplingPlanes::calc_bounding_box()
 {
-    stk::mesh::Part* part = meta_.get_part(fluidPart_);
+    auto iproc = bulk_.parallel_rank();
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    stk::mesh::Selector s_part(*part);
+    stk::mesh::Selector s_part = stk::mesh::selectUnion(fluidParts_);
     const stk::mesh::BucketVector& node_buckets = bulk_.get_buckets(
         stk::topology::NODE_RANK, s_part);
 
     // Setup bounding box array
+    std::vector<double> bBoxMin(ndim_);
+    std::vector<double> bBoxMax(ndim_);
     for (int i=0; i<ndim_; i++) {
-        bBox_[0][i] = std::numeric_limits<double>::max();
-        bBox_[1][i] = -std::numeric_limits<double>::max();
+        bBoxMin[i] = std::numeric_limits<double>::max();
+        bBoxMax[i] = -std::numeric_limits<double>::max();
     }
 
     for(size_t ib=0; ib < node_buckets.size(); ib++) {
@@ -137,61 +155,69 @@ void SamplingPlanes::calc_bounding_box()
 
         for(size_t in=0; in<bukt.size(); in++) {
             for(int i=0; i<ndim_; i++) {
-                if (pt[i] < bBox_[0][i]) bBox_[0][i] = pt[i];
-                if (pt[i] > bBox_[1][i]) bBox_[1][i] = pt[i];
+                if (pt[i] < bBoxMin[i]) bBoxMin[i] = pt[i];
+                if (pt[i] > bBoxMax[i]) bBoxMax[i] = pt[i];
             }
         }
     }
-    std::cerr << "Mesh bounding box: " << std::endl;
-    for(size_t i=0; i<2; i++) {
-        for(int j=0; j<ndim_; j++)
-            std::cerr << "\t" << bBox_[i][j];
-        std::cerr << std::endl;
+    stk::all_reduce_min(
+        bulk_.parallel(), bBoxMin.data(), bBox_[0].data(), ndim_);
+    stk::all_reduce_max(
+        bulk_.parallel(), bBoxMax.data(), bBox_[1].data(), ndim_);
+    if (iproc == 0) {
+        std::cerr << "Mesh bounding box: " << std::endl;
+        for(size_t i=0; i<2; i++) {
+            for(int j=0; j<ndim_; j++)
+                std::cerr << "\t" << bBox_[i][j];
+            std::cerr << std::endl;
+        }
     }
 
     mx_ = (bBox_[1][0] - bBox_[0][0]) / dx_;
     my_ = (bBox_[1][1] - bBox_[0][1]) / dy_;
     nx_ = mx_ + 1;
     ny_ = my_ + 1;
-    std::cerr << "Number of nodes per plane: "
-              << (nx_ * ny_) << " [ " << nx_ << " x " << ny_ << " ]"
-              << std::endl;
+    if (iproc == 0){
+        std::cerr << "Number of nodes per plane: "
+                  << (nx_ * ny_) << " [ " << nx_ << " x " << ny_ << " ]"
+                  << std::endl;
+    }
 }
 
 void SamplingPlanes::generate_zplane(const double zh)
 {
+    const unsigned iproc = bulk_.parallel_rank();
+    const unsigned nproc = bulk_.parallel_size();
     const std::string pName = (boost::format(name_format_)%zh).str();
     stk::mesh::Part& part = *meta_.get_part(pName);
 
-    unsigned numPoints = nx_ * ny_;
-    int numElems = mx_ * my_;
-    std::vector<stk::mesh::EntityId> newIDs(numPoints), elemIDs(numElems);
+    unsigned gNumPoints = nx_ * ny_;
+    unsigned numPoints = 0;
+    unsigned offset = 0;
+    if ((gNumPoints < nproc) && (iproc < gNumPoints)) {
+        numPoints = 1;
+    } else {
+        numPoints = gNumPoints / nproc;
+        offset = iproc * numPoints;
+        unsigned rem = gNumPoints % nproc;
+
+        if ((rem > 0) && (iproc < rem)) numPoints++;
+        offset += (iproc < rem)? iproc : rem;
+    }
+
+    std::vector<stk::mesh::EntityId> newIDs(numPoints);
     std::vector<stk::mesh::Entity> nodeVec(numPoints);
 
     bulk_.modification_begin();
-    bulk_.generate_new_ids(stk::topology::NODE_RANK, numPoints, newIDs);
-    std::cout << "H = " << zh << "; Part = " << pName
-              << "\n\t Node range = [" << newIDs[0]
-              << " - " << newIDs[numPoints-1] << "]" << std::endl;
-    for(unsigned i=0; i<numPoints; i++) {
-        stk::mesh::Entity node = bulk_.declare_entity(
-            stk::topology::NODE_RANK, newIDs[i], part);
-        nodeVec[i] = node;
-    }
+    if (numPoints > 0) {
+        bulk_.generate_new_ids(stk::topology::NODE_RANK, numPoints, newIDs);
 
-    bulk_.generate_new_ids(stk::topology::ELEMENT_RANK, numElems, elemIDs);
-    std::cout << "\t Elem range = [" << elemIDs[0] << " - "
-              << elemIDs[numElems-1] << "]" << std::endl;
-
-    for(unsigned j=0; j<my_; j++)
-        for(unsigned i=0; i<mx_; i++) {
-            stk::mesh::EntityIdVector nids(4);
-            nids[0] = newIDs[j*nx_ + i];
-            nids[1] = newIDs[j*nx_ + i + 1];
-            nids[2] = newIDs[(j+1)*nx_ + i + 1];
-            nids[3] = newIDs[(j+1)*nx_ + i];
-            stk::mesh::declare_element(bulk_, part, elemIDs[j*mx_+i], nids);
+        for(unsigned i=0; i<numPoints; i++) {
+            stk::mesh::Entity node = bulk_.declare_entity(
+                stk::topology::NODE_RANK, newIDs[i], part);
+            nodeVec[i] = node;
         }
+    }
     bulk_.modification_end();
 
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
@@ -199,13 +225,14 @@ void SamplingPlanes::generate_zplane(const double zh)
 
     double xmin = bBox_[0][0];
     double ymin = bBox_[0][1];
-    for(unsigned j=0; j<ny_; j++)
-        for (unsigned i=0; i<nx_; i++) {
-            double* pt = stk::mesh::field_data(*coords, nodeVec[j*nx_+i]);
-            pt[0] = xmin + i * dx_;
-            pt[1] = ymin + j * dy_;
-            pt[2] = zh;
-        }
+    for (unsigned k=0; k < numPoints; k++) {
+        int j = (offset+k) / nx_;
+        int i = (offset+k) % nx_;
+        double* pt = stk::mesh::field_data(*coords, nodeVec[k]);
+        pt[0] = xmin + i * dx_;
+        pt[1] = ymin + j * dy_;
+        pt[2] = zh;
+    }
 }
 
 }  // nalu

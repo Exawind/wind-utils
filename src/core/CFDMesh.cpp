@@ -36,6 +36,9 @@ CFDMesh::CFDMesh
     bulk_(meta_, comm),
     input_db_(filename),
     stkio_(comm)
+{}
+
+void CFDMesh::init()
 {
     stkio_.add_mesh_database(input_db_, stk::io::READ_MESH);
     stkio_.set_bulk_data(bulk_);

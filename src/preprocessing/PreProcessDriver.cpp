@@ -38,12 +38,23 @@ PreProcessDriver::PreProcessDriver
         io_8bit_int_ = data["ioss_8bit_ints"].as<bool>();
     }
 
+    // Create a new StkIO instance
     mesh_.reset(new CFDMesh(comm, input_db));
 
+    // Mesh decomposition option
+    if (data["automatic_decomposition_type"]) {
+        std::string decompType = data["automatic_decomposition_type"].as<std::string>();
+        mesh_->stkio().property_add(
+            Ioss::Property("DECOMPOSITION_METHOD", decompType));
+    }
+    // 8-bit integer fixes
     if (io_8bit_int_) {
         mesh_->stkio().property_add(Ioss::Property("INTEGER_SIZE_DB",8));
         mesh_->stkio().property_add(Ioss::Property("INTEGER_SIZE_API",8));
     }
+    // Initialize the Mesh MetaData
+    mesh_->init();
+
     auto task_names = data["tasks"].as<std::vector<std::string>>();
 
     tasks_.resize(task_names.size());
@@ -51,11 +62,13 @@ PreProcessDriver::PreProcessDriver
         tasks_[i].reset(PreProcessingTask::create(*mesh_, data, task_names[i]));
     }
 
-    std::cerr << "    Found " << task_names.size() << " tasks\n";
-    for (auto ts: task_names) {
-        std::cerr << "        - " << ts << "\n";
+    if (stk::parallel_machine_rank(comm) == 0) {
+        std::cerr << "    Found " << task_names.size() << " tasks\n";
+        for (auto ts: task_names) {
+            std::cerr << "        - " << ts << "\n";
+        }
+        std::cerr << std::endl;
     }
-    std::cerr << std::endl;
 }
 
 void PreProcessDriver::run()
@@ -71,9 +84,12 @@ void PreProcessDriver::run()
     for (auto& t: tasks_)
         t->run();
 
-    std::cerr << "\nAll tasks completed; writing mesh... " << std::endl;
+    stk::parallel_machine_barrier(mesh_->bulk().parallel());
+    if (stk::parallel_machine_rank(comm_) == 0)
+        std::cerr << "\nAll tasks completed; writing mesh... " << std::endl;
     mesh_->write_database(output_db_);
-    std::cerr << "Exodus results file: " << output_db_ << std::endl;
+    if (stk::parallel_machine_rank(comm_) == 0)
+        std::cerr << "Exodus results file: " << output_db_ << std::endl;
 }
 
 } // nalu

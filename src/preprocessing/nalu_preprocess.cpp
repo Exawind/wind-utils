@@ -65,8 +65,10 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    std::cerr << "\nNalu Preprocessing Utility" << "\n    "
-              << "Input file: " << inpfile << std::endl;
+    if (stk::parallel_machine_rank(comm) == 0) {
+        std::cerr << "\nNalu Preprocessing Utility" << "\n    "
+                  << "Input file: " << inpfile << std::endl;
+    }
     sierra::nalu::PreProcessDriver preprocess(comm, inpfile);
     preprocess.run();
 

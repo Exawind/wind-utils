@@ -47,6 +47,8 @@ public:
 
     ~CFDMesh() {}
 
+    void init();
+
     inline stk::mesh::MetaData& meta() { return meta_; }
 
     inline stk::mesh::BulkData& bulk() { return bulk_; }

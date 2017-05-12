@@ -86,11 +86,16 @@ private:
     //! Format specification for the part name
     std::string name_format_;
 
-    //! Fluid realm part (to determine mesh bounding box)
-    std::string fluidPart_;
+    //! Fluid realm parts (to determine mesh bounding box)
+    std::vector<std::string> fluidPartNames_;
+
+    //! Parts of the fluid mesh (to determine mesh bounding box)
+    stk::mesh::PartVector fluidParts_;
 
     //! Spatial resolution in x and y directions
     double dx_;
+
+    //! Spatial resolution in x and y directions
     double dy_;
 
     //! Number of nodes in x and y directions
