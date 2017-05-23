@@ -72,7 +72,7 @@ void RotateMesh::initialize()
         stk::mesh::Part* part = meta_.get_part(pName);
         if (NULL == part) {
             throw std::runtime_error(
-                "SamplingPlanes: Mesh realm not found in mesh database.");
+                "RotateMesh: Mesh realm not found in mesh database.");
         } else {
             meshParts_.push_back(part);
         }
