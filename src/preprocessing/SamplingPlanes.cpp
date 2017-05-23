@@ -57,6 +57,7 @@ SamplingPlanes::SamplingPlanes(
     name_format_(),
     fluidPartNames_(),
     fluidParts_(),
+    vertices_(4, std::vector<double>(2,0.0)),
     dx_(0.0),
     dy_(0.0),
     nx_(0),
@@ -79,10 +80,42 @@ void SamplingPlanes::load(const YAML::Node& zp)
         fluidPartNames_ = fParts.as<std::vector<std::string>>();
     }
 
+    if (zp["boundary_type"]) {
+        std::string bdy_type_name = zp["boundary_type"].as<std::string>();
+
+        if (bdy_type_name == "bounding_box")
+            bdyType_ = BOUND_BOX;
+        else if (bdy_type_name == "quad_vertices")
+            bdyType_ = QUAD_VERTICES;
+        else
+            throw std::runtime_error("Bad option specified for boundary type: " +
+                                     bdy_type_name);
+    } else {
+        bdyType_ = BOUND_BOX;
+    }
+
     heights_ = zp["heights"].as<std::vector<double>>();
     name_format_ = zp["part_name_format"].as<std::string>();
-    dx_ = zp["dx"].as<double>();
-    dy_ = zp["dy"].as<double>();
+
+    if (bdyType_ == BOUND_BOX) {
+        dx_ = zp["dx"].as<double>();
+        dy_ = zp["dy"].as<double>();
+    } else {
+        mx_ = zp["nx"].as<int>();
+        my_ = zp["ny"].as<int>();
+        nx_ = mx_ + 1;
+        ny_ = my_ + 1;
+
+        vertices_ = zp["vertices"].as<std::vector<std::vector<double>>>();
+        if (vertices_.size() != 4)
+            throw std::runtime_error("Incorrect number of vertices provided. Expected 4.");
+        for (size_t i=0; i<vertices_.size(); i++) {
+            size_t nl = vertices_[i].size();
+            if ((nl < 2) || (nl > 3))
+                throw std::runtime_error(
+                    "Inconsistent vertices provided. Check input file.");
+        }
+    }
 }
 
 void SamplingPlanes::initialize()
@@ -173,10 +206,29 @@ void SamplingPlanes::calc_bounding_box()
         }
     }
 
-    mx_ = (bBox_[1][0] - bBox_[0][0]) / dx_;
-    my_ = (bBox_[1][1] - bBox_[0][1]) / dy_;
-    nx_ = mx_ + 1;
-    ny_ = my_ + 1;
+    if (bdyType_ == BOUND_BOX) {
+        mx_ = (bBox_[1][0] - bBox_[0][0]) / dx_;
+        my_ = (bBox_[1][1] - bBox_[0][1]) / dy_;
+        nx_ = mx_ + 1;
+        ny_ = my_ + 1;
+
+        // S-W corner (0 vertex)
+        vertices_[0][0] = bBox_[0][0];
+        vertices_[0][1] = bBox_[0][1];
+        // S-E corner (1 vertex)
+        vertices_[1][0] = bBox_[1][0];
+        vertices_[1][1] = bBox_[0][1];
+        // N-E corner (2 vertex)
+        vertices_[2][0] = bBox_[1][0];
+        vertices_[2][1] = bBox_[1][1];
+        // N-W corner (1 vertex)
+        vertices_[3][0] = bBox_[0][0];
+        vertices_[3][1] = bBox_[1][1];
+    }
+
+    // Reset dx and dy for computations
+    dx_ = 1.0 / static_cast<double>(mx_);
+    dy_ = 1.0 / static_cast<double>(my_);
     if (iproc == 0){
         std::cerr << "Number of nodes per plane: "
                   << (nx_ * ny_) << " [ " << nx_ << " x " << ny_ << " ]"
@@ -223,14 +275,22 @@ void SamplingPlanes::generate_zplane(const double zh)
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    double xmin = bBox_[0][0];
-    double ymin = bBox_[0][1];
     for (unsigned k=0; k < numPoints; k++) {
         int j = (offset+k) / nx_;
         int i = (offset+k) % nx_;
         double* pt = stk::mesh::field_data(*coords, nodeVec[k]);
-        pt[0] = xmin + i * dx_;
-        pt[1] = ymin + j * dy_;
+
+        const double rx = i * dx_;
+        const double ry = j * dy_;
+
+        pt[0] = ((1.0 - rx) * (1.0 - ry) * vertices_[0][0] +
+                 rx * (1.0 - ry) * vertices_[1][0] +
+                 rx * ry * vertices_[2][0] +
+                 (1.0 - rx) * ry * vertices_[3][0]);
+        pt[1] = ((1.0 - rx) * (1.0 - ry) * vertices_[0][1] +
+                 rx * (1.0 - ry) * vertices_[1][1] +
+                 rx * ry * vertices_[2][1] +
+                 (1.0 - rx) * ry * vertices_[3][1]);
         pt[2] = zh;
     }
 }
