@@ -41,10 +41,10 @@ PreProcessingTask::create(
     if (it != PreProcessingTaskReg_ConstructorTable_->end()) {
         return (it->second)(mesh, inp);
     } else {
-        std::cerr << "ERROR: Invalid PreProcessingTask => " << task_type << std::endl;
-        std::cerr << "Valid task types are: " << std::endl;
+        std::cout << "ERROR: Invalid PreProcessingTask => " << task_type << std::endl;
+        std::cout << "Valid task types are: " << std::endl;
         for (const auto& t: *PreProcessingTaskReg_ConstructorTable_) {
-            std::cerr << "\t" << t.first << std::endl;
+            std::cout << "\t" << t.first << std::endl;
         }
     }
     return nullptr;

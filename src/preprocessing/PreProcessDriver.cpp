@@ -55,41 +55,54 @@ PreProcessDriver::PreProcessDriver
     // Initialize the Mesh MetaData
     mesh_->init();
 
-    auto task_names = data["tasks"].as<std::vector<std::string>>();
+    task_names_ = data["tasks"].as<std::vector<std::string>>();
 
-    tasks_.resize(task_names.size());
-    for (size_t i=0; i < task_names.size(); i++) {
-        tasks_[i].reset(PreProcessingTask::create(*mesh_, data, task_names[i]));
+    tasks_.resize(task_names_.size());
+    for (size_t i=0; i < task_names_.size(); i++) {
+        tasks_[i].reset(PreProcessingTask::create(*mesh_, data, task_names_[i]));
     }
 
     if (stk::parallel_machine_rank(comm) == 0) {
-        std::cerr << "    Found " << task_names.size() << " tasks\n";
-        for (auto ts: task_names) {
-            std::cerr << "        - " << ts << "\n";
+        std::cout << "Found " << task_names_.size() << " tasks\n";
+        for (auto ts: task_names_) {
+            std::cout << "    - " << ts << "\n";
         }
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
 }
 
 void PreProcessDriver::run()
 {
+    bool dowrite = (stk::parallel_machine_rank(comm_) == 0);
+
     // Perform metadata updates
+    if (dowrite) std::cout << "Performing metadata updates... " << std::endl;
     for (auto& t: tasks_)
         t->initialize();
+    if (dowrite) std::cout << "Metadata update completed" << std::endl;
 
     // Load the bulk data
+    if (dowrite) std::cout << "Reading mesh bulk data... ";
     mesh_->stkio().populate_bulk_data();
+    if (dowrite) std::cout << "done." << std::endl;
 
     // Perform modifications to bulk data
-    for (auto& t: tasks_)
+    for (size_t i=0; i < tasks_.size(); i++) {
+        auto& t = tasks_[i];
+        if (dowrite)
+            std::cout
+                << "\n--------------------------------------------------\n"
+                << "Begin task: " << task_names_[i] << std::endl;
         t->run();
+        if (dowrite) std::cout << "End task: " << task_names_[i] << std::endl;
+     }
 
     stk::parallel_machine_barrier(mesh_->bulk().parallel());
     if (stk::parallel_machine_rank(comm_) == 0)
-        std::cerr << "\nAll tasks completed; writing mesh... " << std::endl;
+        std::cout << "\nAll tasks completed; writing mesh... " << std::endl;
     mesh_->write_database(output_db_);
     if (stk::parallel_machine_rank(comm_) == 0)
-        std::cerr << "Exodus results file: " << output_db_ << std::endl;
+        std::cout << "Exodus results file: " << output_db_ << std::endl;
 }
 
 } // nalu

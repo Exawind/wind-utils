@@ -85,7 +85,7 @@ void RotateMesh::initialize()
 void RotateMesh::run()
 {
     if (bulk_.parallel_rank() == 0)
-        std::cerr << "Rotating mesh " << std::endl;
+        std::cout << "Rotating mesh " << std::endl;
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 

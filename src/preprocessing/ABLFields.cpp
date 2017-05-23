@@ -87,7 +87,7 @@ void ABLFields::initialize()
 void ABLFields::run()
 {
     if (bulk_.parallel_rank() == 0)
-        std::cerr << "Generating ABL fields" << std::endl;
+        std::cout << "Generating ABL fields" << std::endl;
     if (doVelocity_) init_velocity_field();
 
     if (doTemperature_) init_temperature_field();

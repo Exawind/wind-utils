@@ -105,7 +105,7 @@ void NDTW2D::calc_ndtw()
     ScalarFieldType* ndtw = meta_.get_field<ScalarFieldType>(
         stk::topology::NODE_RANK, wall_dist_name_);
 
-    std::cerr << "Calculating nearest wall distance... " << std::endl;
+    std::cout << "Calculating nearest wall distance... " << std::endl;
     for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
         stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
         double* xyz = stk::mesh::field_data(*coords, fbkt);

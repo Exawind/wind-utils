@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
     if (vmap.count("help")) {
         if (!stk::parallel_machine_rank(comm))
-            std::cerr << desc << std::endl;
+            std::cout << desc << std::endl;
         return 0;
     }
 
@@ -60,13 +60,13 @@ int main(int argc, char** argv)
     std::ifstream fin(inpfile.c_str());
     if (!fin.good()) {
         if (!stk::parallel_machine_rank(comm)) {
-            std::cerr << "Cannot find input file: " << inpfile << std::endl;
+            std::cout << "Cannot find input file: " << inpfile << std::endl;
         }
         return 1;
     }
 
     if (stk::parallel_machine_rank(comm) == 0) {
-        std::cerr << "\nNalu Preprocessing Utility" << "\n    "
+        std::cout << "\nNalu Preprocessing Utility" << "\n"
                   << "Input file: " << inpfile << std::endl;
     }
     sierra::nalu::PreProcessDriver preprocess(comm, inpfile);

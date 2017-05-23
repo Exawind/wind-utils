@@ -56,6 +56,9 @@ private:
     //! Pointer to the CFDMesh instance
     std::unique_ptr<CFDMesh> mesh_;
 
+    //! List of task names provided by user
+    std::vector<std::string> task_names_;
+
     //! List of runtime selected tasks
     std::vector<std::unique_ptr<PreProcessingTask>> tasks_;
 

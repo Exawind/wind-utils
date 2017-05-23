@@ -132,7 +132,7 @@ void SamplingPlanes::initialize()
     }
 
     if (iproc == 0)
-        std::cerr << "SamplingPlanes: Registering parts to meta data:" << std::endl;
+        std::cout << "SamplingPlanes: Registering parts to meta data:" << std::endl;
     for(auto zh: heights_) {
         std::string pName = (boost::format(name_format_)%zh).str();
         stk::mesh::Part* part_check = meta_.get_part(pName);
@@ -145,7 +145,7 @@ void SamplingPlanes::initialize()
             stk::io::put_io_part_attribute(part);
             // stk::mesh::set_topology(part, stk::topology::SHELL_QUAD_4);
 
-            if (iproc == 0) std::cerr << "\t " << pName << std::endl;
+            if (iproc == 0) std::cout << "\t " << pName << std::endl;
 
             VectorFieldType* coords = meta_.get_field<VectorFieldType>(
                 stk::topology::NODE_RANK, "coordinates");
@@ -198,11 +198,11 @@ void SamplingPlanes::calc_bounding_box()
     stk::all_reduce_max(
         bulk_.parallel(), bBoxMax.data(), bBox_[1].data(), ndim_);
     if (iproc == 0) {
-        std::cerr << "Mesh bounding box: " << std::endl;
+        std::cout << "Mesh bounding box: " << std::endl;
         for(size_t i=0; i<2; i++) {
             for(int j=0; j<ndim_; j++)
-                std::cerr << "\t" << bBox_[i][j];
-            std::cerr << std::endl;
+                std::cout << "\t" << bBox_[i][j];
+            std::cout << std::endl;
         }
     }
 
@@ -230,7 +230,7 @@ void SamplingPlanes::calc_bounding_box()
     dx_ = 1.0 / static_cast<double>(mx_);
     dy_ = 1.0 / static_cast<double>(my_);
     if (iproc == 0){
-        std::cerr << "Number of nodes per plane: "
+        std::cout << "Number of nodes per plane: "
                   << (nx_ * ny_) << " [ " << nx_ << " x " << ny_ << " ]"
                   << std::endl;
     }
