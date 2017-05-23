@@ -18,7 +18,11 @@
 #include <stk_mesh/base/FEMHelpers.hpp>
 #include <stk_io/IossBridge.hpp>
 #include <stk_io/StkMeshIoBroker.hpp>
+#include <stk_util/parallel/ParallelReduce.hpp>
 #include <Ionit_Initializer.h>
+
+#include <limits>
+#include <algorithm>
 
 namespace sierra {
 namespace nalu {
@@ -71,6 +75,50 @@ void CFDMesh::write_database
     stkio_.begin_output_step(fh, time);
     stkio_.write_defined_output_fields(fh);
     stkio_.end_output_step(fh);
+}
+
+BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verbose)
+{
+    auto ndim = meta_.spatial_dimension();
+    std::vector<double> bBoxMin(3, std::numeric_limits<double>::max());
+    std::vector<double> bBoxMax(3, std::numeric_limits<double>::lowest());
+
+    if (ndim == 2) {
+        bBoxMin[2] = 0.0;
+        bBoxMax[2] = 0.0;
+    }
+
+    auto& bkts = bulk_.get_buckets(stk::topology::NODE_RANK, selector);
+    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+        stk::topology::NODE_RANK, "coordinates");
+
+    for (auto b: bkts) {
+        double* pt = stk::mesh::field_data(*coords, *b);
+        size_t num_nodes = b->size();
+
+        for (size_t in=0; in < num_nodes; in++) {
+            for (unsigned int i=0; i<ndim; i++) {
+                bBoxMin[i] = std::min(bBoxMin[i], pt[i]);
+                bBoxMax[i] = std::max(bBoxMax[i], pt[i]);
+            }
+        }
+    }
+
+    std::vector<double> gMin(3), gMax(3);
+    stk::all_reduce_min(
+        bulk_.parallel(), bBoxMin.data(), gMin.data(), ndim);
+    stk::all_reduce_max(
+        bulk_.parallel(), bBoxMax.data(), gMax.data(), ndim);
+
+    PointType minPt(gMin[0], gMin[1], gMin[2]);
+    PointType maxPt(gMax[0], gMax[1], gMax[2]);
+    BoxType bbox(minPt, maxPt);
+
+    if (verbose && bulk_.parallel_rank() == 0) {
+        std::cout << "\nMesh bounding box: \n\t" << bbox;
+    }
+
+    return bbox;
 }
 
 }  // nalu

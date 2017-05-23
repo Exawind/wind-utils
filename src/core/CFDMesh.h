@@ -21,8 +21,10 @@
 #include "stk_mesh/base/BulkData.hpp"
 #include "stk_mesh/base/Entity.hpp"
 #include "stk_mesh/base/Field.hpp"
-#include <stk_mesh/base/CoordinateSystems.hpp>
-#include <stk_io/StkMeshIoBroker.hpp>
+#include "stk_mesh/base/CoordinateSystems.hpp"
+#include "stk_search/Point.hpp"
+#include "stk_search/Box.hpp"
+#include "stk_io/StkMeshIoBroker.hpp"
 
 #include <string>
 #include <memory>
@@ -33,6 +35,8 @@ namespace nalu {
 
 typedef stk::mesh::Field<double, stk::mesh::Cartesian> VectorFieldType;
 typedef stk::mesh::Field<double> ScalarFieldType;
+typedef stk::search::Point<double> PointType;
+typedef stk::search::Box<double> BoxType;
 
 /** STK Mesh interface
  *
@@ -66,10 +70,23 @@ public:
      */
     void write_database(std::string output_db, double time=0.0);
 
+    /** Calculate the bounding box of the mesh
+     *
+     *  The selector can pick parts that are not contiguous. However, the
+     *  bounding box returned will be the biggest box that encloses all parts
+     *  selected.
+     *
+     *  \param selector An instance of stk::mesh::Selector to filter parts of
+     *  the mesh where bounding box is calculated.
+     *  \param verbose If true, then print out the bounding box to standard output.
+     *
+     *  \return An stk::search::Box instance containing the min and max points (3-D).
+     */
+    BoxType calc_bounding_box(const stk::mesh::Selector, bool verbose=true);
+
 private:
     CFDMesh() = delete;
     CFDMesh(const CFDMesh&) = delete;
-
     //! Instance of the parallel MPI_COMM object
     stk::ParallelMachine& comm_;
 
