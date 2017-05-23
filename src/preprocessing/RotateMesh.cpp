@@ -64,6 +64,9 @@ void RotateMesh::load(const YAML::Node& node)
     angle_ *= std::acos(-1.0) / 180.0;
     axis_ = node["axis"].as<std::vector<double>>();
     origin_ = node["origin"].as<std::vector<double>>();
+
+    ThrowAssert(axis_.size() == 3);
+    ThrowAssert(origin_.size() == 3);
 }
 
 void RotateMesh::initialize()
@@ -97,33 +100,44 @@ void RotateMesh::run()
     }
     mag = std::sqrt(mag);
 
+    const int ndim = meta_.spatial_dimension();
     const double cosang = std::cos(0.5*angle_);
     const double sinang = std::sin(0.5*angle_);
     const double q0 = cosang;
     const double q1 = sinang * axis_[0] / mag;
     const double q2 = sinang * axis_[1] / mag;
     const double q3 = sinang * axis_[2] / mag;
+    double oldxyz[3] = {0.0, 0.0, 0.0};
+    double newxyz[3] = {0.0, 0.0, 0.0};
 
     for(auto b: node_buckets) {
         for(size_t in=0; in < b->size(); in++) {
             auto node = (*b)[in];
             double* xyz = stk::mesh::field_data(*coords, node);
 
-            const double cx = xyz[0] - origin_[0];
-            const double cy = xyz[1] - origin_[1];
-            const double cz = xyz[2] - origin_[2];
+            for (int i=0; i<ndim; i++) {
+                oldxyz[i] = xyz[i];
+            }
 
-            xyz[0] = (q0*q0 + q1*q1 - q2*q2 - q3*q3) * cx +
+            const double cx = oldxyz[0] - origin_[0];
+            const double cy = oldxyz[1] - origin_[1];
+            const double cz = oldxyz[2] - origin_[2];
+
+            newxyz[0] = (q0*q0 + q1*q1 - q2*q2 - q3*q3) * cx +
                 2.0 * (q1*q2 - q0*q3) * cy +
                 2.0 * (q0*q2 + q1*q3) * cz + origin_[0];
 
-            xyz[1] = 2.0 * (q1*q2 + q0*q3) * cx +
+            newxyz[1] = 2.0 * (q1*q2 + q0*q3) * cx +
                 (q0*q0 - q1*q1 + q2*q2 - q3*q3) * cy +
                 2.0 * (q2*q3 - q0*q1) * cz + origin_[1];
 
-            xyz[2] = 2.0 * (q1*q3 - q0*q2) * cx +
+            newxyz[2] = 2.0 * (q1*q3 - q0*q2) * cx +
                 2.0 * (q0*q1 + q2*q3) * cy +
                 (q0*q0 - q1*q1 - q2*q2 + q3*q3) * cz + origin_[2];
+
+            for (int i=0; i<ndim; i++) {
+                xyz[i] = newxyz[i];
+            }
         }
     }
 }
