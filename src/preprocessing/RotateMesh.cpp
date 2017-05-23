@@ -90,12 +90,19 @@ void RotateMesh::run()
     const stk::mesh::BucketVector& node_buckets = bulk_.get_buckets(
         stk::topology::NODE_RANK, s_part);
 
+    // Calculate the magnitude of the rotation axis vector
+    double mag = 0.0;
+    for (int i=0; i<3; i++) {
+        mag += axis_[i] * axis_[i];
+    }
+    mag = std::sqrt(mag);
+
     const double cosang = std::cos(0.5*angle_);
     const double sinang = std::sin(0.5*angle_);
     const double q0 = cosang;
-    const double q1 = sinang * axis_[0];
-    const double q2 = sinang * axis_[1];
-    const double q3 = sinang * axis_[2];
+    const double q1 = sinang * axis_[0] / mag;
+    const double q2 = sinang * axis_[1] / mag;
+    const double q3 = sinang * axis_[2] / mag;
 
     for(auto b: node_buckets) {
         for(size_t in=0; in < b->size(); in++) {
