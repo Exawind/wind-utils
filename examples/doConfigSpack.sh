@@ -1,11 +1,16 @@
 #!/bin/bash
 # Example script to configure NaluWindUtils using Spack
 
+# Make sure SPACK_ROOT (spack root directory) is an environment variable
+if [ -z ${SPACK_ROOT+x} ]; then
+    echo "Please set SPACK_ROOT variable. Exiting configure script.";
+    exit 1
+fi
+
 # Set the Spack compiler flavor
 COMPILER=gcc
 
-# Use shared Spack on peregine (or change to your Spack's location)
-SPACK_ROOT=/projects/windFlowModeling/ExaWind/NaluSharedInstallation/spack
+# Spack executable
 SPACK=${SPACK_ROOT}/bin/spack
 
 # Point to appropriate spack installed libraries or local installations
