@@ -33,11 +33,14 @@ See [these instructions](./src/wrftonalu/README.md).
   cd nalu_utils
   mkdir build
   cd build
-  cp ../doconfig.sh .
+  cp ../examples/doconfig.sh .
   # Edit doconfig.sh to set Nalu/Trilinos paths appropriately
   ./doconfig.sh
   make
   ```
+  
+Note that a Spack-based configuration example is also available
+`examples/doConfigSpack.sh`.
 
 Once compiled, the executables are available in `build/preprocessing/` directory. For
 example, `build/preprocessing/nalu_preprocess`. Example execution
