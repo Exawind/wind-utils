@@ -230,22 +230,36 @@ void HexBlockMesh::generate_elements()
     int nx = meshDims_[0] + 1;
     int ny = meshDims_[1] + 1;
 
+    stk::mesh::EntityIdVector nids(8);
     bulk_.modification_begin("Adding mesh nodes");
     {
         if (doPrint)
             std::cout << "\tGenerating node IDs..." << std::endl;
 
         bulk_.generate_new_ids(stk::topology::NODE_RANK, numNodes, nodeIDs);
+
+        if (doPrint)
+            std::cout << "\tCreating nodes... " ;
+        unsigned marker = 1;
         for (unsigned i=0; i<numNodes; i++) {
+            if (doPrint && (marker <= (i * 10 / numNodes))) {
+                std::cout << marker * 10 << "% ";
+                marker++;
+            }
             bulk_.declare_entity(
                 stk::topology::NODE_RANK, nodeIDs[i], part);
         }
+        std::cout << std::endl;
 
         if (doPrint)
             std::cout << "\tGenerating element IDs..." << std::endl;
 
         bulk_.generate_new_ids(stk::topology::ELEM_RANK, numElems, elemIDs);
 
+        if (doPrint)
+            std::cout << "\tCreating elements... " ;
+        marker = 1;
+        int idx;
         for (int k=0; k < mz; k++) {
             int ik = k * (nx * ny);
             int ikp1 = (k+1) * (nx * ny);
@@ -253,7 +267,7 @@ void HexBlockMesh::generate_elements()
                 int ij = j * nx;
                 int ijp1 = (j+1) * nx;
                 for (int i=0; i < mx; i++) {
-                    stk::mesh::EntityIdVector nids(8);
+                    idx = k*(mx*my) + j*mx + i;
                     nids[0] = nodeIDs[ik + ij + i];
                     nids[1] = nodeIDs[ik + ij + i + 1];
                     nids[2] = nodeIDs[ik + ijp1 + i + 1];
@@ -265,10 +279,17 @@ void HexBlockMesh::generate_elements()
                     nids[7] = nodeIDs[ikp1 + ijp1 + i];
 
                     stk::mesh::declare_element(
-                        bulk_, part, elemIDs[k*(mx*my) + j*mx + i], nids);
+                        bulk_, part, elemIDs[idx], nids);
+
+                    if (doPrint && (marker <= (idx * 10 / numElems))) {
+                        std::cout << marker * 10 << "% ";
+                        marker++;
+                    }
                 }
             }
         }
+        std::cout << std::endl;
+
         generate_x_boundary(elemIDs, 0);
         generate_x_boundary(elemIDs, mx-1);
         generate_y_boundary(elemIDs, 0);
@@ -276,6 +297,8 @@ void HexBlockMesh::generate_elements()
         generate_z_boundary(elemIDs, 0);
         generate_z_boundary(elemIDs, mz-1);
     }
+    if (doPrint)
+        std::cout << "\tFinalizing bulk modifications..." << std::endl;
     bulk_.modification_end();
 
     elemIDs.clear();
