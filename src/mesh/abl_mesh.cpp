@@ -84,5 +84,6 @@ int main(int argc, char** argv)
     std::cout << "Writing mesh to file: " << output_db << std::endl;
     stk::io::write_mesh(output_db, mesh->bulk());
 
+    stk::parallel_machine_finalize();
     return 0;
 }
