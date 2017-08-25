@@ -26,6 +26,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 add_subdirectory(core)
 add_subdirectory(preprocessing)
+add_subdirectory(mesh)
 
 if (ENABLE_WRFTONALU)
   set (NETCDF_F77 "YES")

@@ -46,8 +46,11 @@ typedef stk::search::Box<double> BoxType;
 class CFDMesh
 {
 public:
-    CFDMesh(stk::ParallelMachine&,
-            const std::string);
+    explicit CFDMesh(stk::ParallelMachine&,
+            const std::string filename);
+
+    explicit CFDMesh(stk::ParallelMachine&,
+                     const int ndim);
 
     ~CFDMesh() {}
 

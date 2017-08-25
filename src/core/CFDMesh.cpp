@@ -42,8 +42,21 @@ CFDMesh::CFDMesh
     stkio_(comm)
 {}
 
+CFDMesh::CFDMesh
+(
+    stk::ParallelMachine& comm,
+    const int ndim
+) : comm_(comm),
+    meta_(ndim),
+    bulk_(meta_, comm),
+    stkio_(comm)
+{}
+
 void CFDMesh::init()
 {
+    if (input_db_ == "")
+        throw std::runtime_error("CFDMesh::init called on empty database file");
+
     stkio_.add_mesh_database(input_db_, stk::io::READ_MESH);
     stkio_.set_bulk_data(bulk_);
     stkio_.create_input_mesh();
