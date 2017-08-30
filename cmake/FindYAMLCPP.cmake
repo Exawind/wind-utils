@@ -11,14 +11,16 @@
 # limitations under the License.
 #
 
-add_subdirectory(core)
-add_subdirectory(preprocessing)
-add_subdirectory(mesh)
+find_path(YAML_INCLUDE_DIRS
+  yaml-cpp/yaml.h
+  HINTS ${YAML_ROOT} ${CMAKE_INSTALL_PREFIX}
+  PATH_SUFFIXES include)
 
-if (ENABLE_WRFTONALU)
-  set (NETCDF_F77 "YES")
-  find_package (NetCDF REQUIRED)
+find_library(YAML_LIBRARIES
+  NAMES libyaml-cpp.a yaml-cpp
+  HINTS ${YAML_ROOT} ${CMAKE_INSTALL_PREFIX}
+  PATH_SUFFIXES lib)
 
-  include_directories(${NETCDF_INCLUDE_DIRS})
-  add_subdirectory(wrftonalu)
-endif (ENABLE_WRFTONALU)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(YAMLCPP DEFAULT_MSG YAML_INCLUDE_DIRS YAML_LIBRARIES)
+mark_as_advanced(YAML_INCLUDE_DIRS YAML_LIBRARIES)

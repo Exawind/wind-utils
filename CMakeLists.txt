@@ -1,0 +1,59 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+cmake_minimum_required(VERSION 3.1)
+
+project(NaluWindUtils CXX C Fortran)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
+
+option(ENABLE_WRFTONALU "Enable WRF to Nalu Fortran conversion utility" off)
+
+find_package(MPI REQUIRED)
+find_package(Trilinos REQUIRED)
+find_package(YAMLCPP REQUIRED)
+
+if (CMAKE_VERSION VERSION_LESS "3.1")
+  set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+else()
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+include_directories(${MPI_INCLUDE_PATH})
+include_directories(${Trilinos_INCLUDE_DIRS})
+include_directories(${Trilinos_TPL_INCLUDE_DIRS})
+include_directories(${YAML_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_subdirectory(src)
+
+# Install library dependency information
+install(EXPORT ${CMAKE_PROJECT_NAME}Libraries
+  DESTINATION lib/cmake/${CMAKE_PROJECT_NAME}
+  FILE ${CMAKE_PROJECT_NAME}Libraries.cmake)
+
+# Create NaluWindUtils config so that other codes can find NaluWindUtils
+include(CMakePackageConfigHelpers)
+
+set(INCLUDE_INSTALL_DIR include/)
+set(LIB_INSTALL_DIR lib/)
+
+configure_package_config_file(
+  cmake/${CMAKE_PROJECT_NAME}.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.cmake
+  INSTALL_DESTINATION lib/cmake/${CMAKE_PROJECT_NAME}
+  PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.cmake
+  DESTINATION lib/cmake/${CMAKE_PROJECT_NAME})

@@ -9,6 +9,7 @@ add_executable(wrftonalu
   )
 
 target_link_libraries(wrftonalu
+  ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
   ${NETCDF_F77_LIBRARIES}
   ${MPI_LIBRARIES})
