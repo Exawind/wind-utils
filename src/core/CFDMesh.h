@@ -87,6 +87,19 @@ public:
      */
     BoxType calc_bounding_box(const stk::mesh::Selector, bool verbose=true);
 
+    /** Set automatic mesh decomposition property
+     */
+    inline void set_decomposition_type(std::string decompType)
+    {
+        stkio_.property_add(Ioss::Property("DECOMPOSITION_METHOD", decompType));
+    }
+
+    inline void set_64bit_flags()
+    {
+        stkio_.property_add(Ioss::Property("INTEGER_SIZE_DB",8));
+        stkio_.property_add(Ioss::Property("INTEGER_SIZE_API",8));
+    }
+
 private:
     CFDMesh() = delete;
     CFDMesh(const CFDMesh&) = delete;

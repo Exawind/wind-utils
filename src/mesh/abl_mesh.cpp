@@ -82,7 +82,10 @@ int main(int argc, char** argv)
     blockMesh.run();
 
     std::cout << "Writing mesh to file: " << output_db << std::endl;
-    stk::io::write_mesh(output_db, mesh->bulk());
+    mesh->set_64bit_flags();
+    auto& stkio = mesh->stkio();
+    stkio.set_bulk_data(mesh->bulk());
+    mesh->write_database(output_db);
 
     stk::parallel_machine_finalize();
     return 0;
