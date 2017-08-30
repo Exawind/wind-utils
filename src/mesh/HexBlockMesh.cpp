@@ -290,6 +290,13 @@ void HexBlockMesh::generate_elements()
         }
         std::cout << std::endl;
 
+    }
+    bulk_.modification_end();
+    if (doPrint)
+        std::cout << "\tFinalizing bulk modifications..." << std::endl;
+
+    bulk_.modification_begin("Adding sidesets");
+    {
         generate_x_boundary(elemIDs, 0);
         generate_x_boundary(elemIDs, mx-1);
         generate_y_boundary(elemIDs, 0);
@@ -297,9 +304,8 @@ void HexBlockMesh::generate_elements()
         generate_z_boundary(elemIDs, 0);
         generate_z_boundary(elemIDs, mz-1);
     }
-    if (doPrint)
-        std::cout << "\tFinalizing bulk modifications..." << std::endl;
     bulk_.modification_end();
+
 
     elemIDs.clear();
     elemIDs.resize(1);
