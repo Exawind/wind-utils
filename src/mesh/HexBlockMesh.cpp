@@ -127,7 +127,7 @@ void HexBlockMesh::load(const YAML::Node& node)
             throw std::runtime_error("HexBlockMesh: Inconsistent coordinates provided");
     }
 
-    meshDims_ = node["mesh_dimensions"].as<std::array<int, 3>>();
+    meshDims_ = node["mesh_dimensions"].as<std::vector<int>>();
 }
 
 void HexBlockMesh::initialize()

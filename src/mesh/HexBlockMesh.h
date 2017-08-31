@@ -74,7 +74,7 @@ private:
     std::vector<std::vector<double>> vertices_;
 
     //! Mesh dimensions in each direction
-    std::array<int, 3> meshDims_;
+    std::vector<int> meshDims_;
 
     //! Stretch factor
     std::array<double, 3> stretchFactor{{1.0, 1.0, 1.0}};
