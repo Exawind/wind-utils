@@ -1,4 +1,3 @@
-
 # Nalu Wind Energy Utilities
 
 This repository contains various pre- and post-processing utilities to be used

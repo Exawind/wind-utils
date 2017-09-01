@@ -1,0 +1,108 @@
+.. _util_abl_mesh_exe:
+
+``abl_mesh`` -- Block HEX Mesh Generation
+=========================================
+
+The ``abl_mesh`` executable can be used to generate structured mesh with HEX-8
+elements in Exodus-II format. The interface is similar to OpenFOAM's
+``blockMesh`` utility and can be used to generate simple meshes for ABL
+simulations on flat terrain without resorting to commercial mesh generation
+software, e.g., Pointwise.
+
+Command line invocation
+-----------------------
+
+.. code-block:: bash
+
+   bash$ abl_mesh -i abl_mesh.yaml
+
+   Nalu ABL Mesh Generation Utility
+   Input file: abl_mesh.yaml
+   HexBlockMesh: Registering parts to meta data
+   	Mesh block: fluid_part
+   Num. nodes = 1331; Num elements = 1000
+   	Generating node IDs...
+   	Creating nodes... 10% 20% 30% 40% 50% 60% 70% 80% 90%
+   	Generating element IDs...
+   	Creating elements... 10% 20% 30% 40% 50% 60% 70% 80% 90%
+   	Finalizing bulk modifications...
+   	Generating X Sideset: west
+   	Generating X Sideset: east
+   	Generating Y Sideset: south
+   	Generating Y Sideset: north
+   	Generating Z Sideset: terrain
+   	Generating Z Sideset: top
+   	Generating coordinates...
+   Writing mesh to file: ablmesh.exo
+
+
+.. program:: abl_mesh
+
+.. option:: -i, --input-file
+
+   YAML input file to be processed for mesh generation details. Default:
+   ``nalu_abl_mesh.yaml``.
+
+Input File Parameters
+---------------------
+
+The input file must contain a ``nalu_abl_mesh`` section that contains the input
+parameters.A sample input file is shown below
+
+.. code-block:: yaml
+   :linenos:
+
+   nalu_abl_mesh:
+     output_db: ablmesh.exo
+
+     spec_type: bounding_box
+
+     vertices:
+       - [0.0, 0.0, 0.0]
+       - [10.0, 10.0, 10.0]
+
+     mesh_dimensions: [10, 10, 10]
+
+
+.. confval:: output_db
+
+   The Exodus-II filename where the mesh is output. No default, must be provided
+   by the user.
+
+.. confval:: spec_type
+
+   Specification type used to define the extents of the structured HEX mesh.
+   This option is used to interpret the :confval:`vertices` read from the input
+   file. Currently, two options are supported:
+
+   =================  =======================================================
+   Type               Description
+   =================  =======================================================
+   ``bounding_box``   Use axis aligned bounding box as domain boundaries
+   ``vertices``       Use user provided vertices to define extents
+   =================  =======================================================
+
+.. confval:: vertices
+
+   The coordinates specifying the extents of the computational domain. This
+   entry is interpreted differently depending on the :confval:`spec_type`. If
+   type is set to ``bounding_box`` then the code expects a list of two 3-D
+   coordinate points describing bounding box to generate an axis aligned mesh.
+   Otherwise, the code expects a list of 8 points describing the vertices of the
+   trapezoidal prism.
+
+.. confval:: mesh_dimensions
+
+   Mesh resolution for the resulting structured HEX mesh along each direction.
+   For a trapezoidal prism, the code will interpret the major axis along
+   ``1-2``, ``1-4``, and ``1-5`` edges respectively.
+
+Limitations
+-----------
+
+#. Currently the code is setup to only generate constant size grids in each direction.
+
+#. Does not support the ability to generate multiple blocks
+
+#. Must be run on a single processor, running with multiple MPI ranks is currently
+   unsupported.

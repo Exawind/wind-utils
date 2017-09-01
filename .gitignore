@@ -2,5 +2,6 @@ build/*
 
 doc/doxygen/html/*
 doc/doxygen/latex/*
+doc/manual/build/
 
 .DS_Store

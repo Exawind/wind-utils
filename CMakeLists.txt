@@ -19,6 +19,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
 
 option(ENABLE_WRFTONALU "Enable WRF to Nalu Fortran conversion utility" off)
+option(ENABLE_SPHINX_DOCS "Enable Sphinx-based user/developer manual" off)
+option(ENABLE_DOXYGEN_DOCS "Enable API documentation using Doxygen" off)
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
@@ -38,6 +40,10 @@ include_directories(${YAML_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_subdirectory(src)
+
+if (ENABLE_SPHINX_DOCS OR ENABLE_DOXYGEN_DOCS)
+  add_subdirectory(doc)
+endif()
 
 # Install library dependency information
 install(EXPORT ${CMAKE_PROJECT_NAME}Libraries

@@ -1,0 +1,70 @@
+# -*- mode: yaml -*-
+#
+# Nalu Preprocessing Utility - Example input file
+#
+
+# Mandatory section for Nalu preprocessing
+nalu_preprocess:
+  # Name of the input exodus database
+  input_db: abl_mesh.g
+  # Name of the output exodus database
+  output_db: abl_mesh_precursor.g
+
+  # Flag indicating whether the database contains 8-bit integers
+  ioss_8bit_ints: false
+
+  # Flag indicating mesh decomposition type (for parallel runs)
+  # automatic_decomposition_type: rcb
+
+  # Nalu preprocessor expects a list of tasks to be performed on the mesh and
+  # field data structures
+  tasks:
+    - init_abl_fields
+    - generate_planes
+
+  # Inputs for each "task" is organized under the section corresponding to the
+  # task name
+  init_abl_fields:
+    fluid_parts: [Unspecified-2-HEX]
+
+    temperature:
+      heights: [    0, 650.0, 750.0, 10750.0]
+      values:  [280.0, 280.0, 288.0,   318.0]
+
+    velocity:
+      heights: [0.0, 10.0, 30.0, 70.0, 100.0, 650.0, 10000.0]
+      values:
+        - [ 0.0, 0.0, 0.0]
+        - [4.81947, -4.81947, 0.0]
+        - [5.63845, -5.63845, 0.0]
+        - [6.36396, -6.36396, 0.0]
+        - [6.69663, -6.69663, 0.0]
+        - [8.74957, -8.74957, 0.0]
+        - [8.74957, -8.74957, 0.0]
+
+  generate_planes:
+    fluid_part: Unspecified-2-hex
+
+    heights: [ 70.0 ]
+    part_name_format: "zplane_%06.1f"
+
+    dx: 12.0
+    dy: 12.0
+
+  rotate_mesh_ccw:
+    task_type: rotate_mesh
+    mesh_parts:
+      - unspecified-2-hex
+
+    angle: 30.0
+    origin: [500.0, 0.0, 0.0]
+    axis: [0.0, 0.0, 1.0]
+
+  rotate_mesh_cw:
+    task_type: rotate_mesh
+    mesh_parts:
+      - unspecified-2-hex
+
+    angle: -45.0
+    origin: [500.0, 0.0, 0.0]
+    axis: [0.0, 0.0, 1.0]
