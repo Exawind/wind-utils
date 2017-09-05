@@ -58,3 +58,8 @@ This software is developed by researchers at `NREL <https://www.nrel.gov>`_ and
    user/index
    dev/index
 
+
+Indices and Tables
+==================
+
+* :ref:`genindex`
