@@ -40,4 +40,4 @@ cmake \
   -DNETCDF_F77_ROOT:PATH=$netcdffortran_install_dir \
   -DCMAKE_BUILD_TYPE=Debug \
 $EXTRA_ARGS \
-../src
+..

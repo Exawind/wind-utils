@@ -1,49 +1,24 @@
 # Nalu Wind Energy Utilities
 
-This repository contains various pre- and post-processing utilities to be used
-with Nalu CFD solver. 
+![Docs status](https://readthedocs.org/projects/naluwindutils/badge/)
 
-## Pre-processing utilities
+NaluWindUtils is a companion software library to [Nalu](http://nalu.readthedocs.io/en/latest/) --- a generalized, unstructured,
+massively parallel, low-Mach flow solver for wind energy applications. As the
+name indicates, this software repository provides various meshing, pre- and
+post-processing utilities for use with the Nalu CFD code to aid setup and
+analysis of wind energy LES problems. This software is licensed under [Apache
+License Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) open-source
+license.
 
-The preprocessor `nalu_preprocess` can perform various tasks on an exodus input
-mesh database. See `examples/nalu_preprocess.yaml` for an example input deck.
-Currently, the following preprocessor options are available.
 
-**3-D Utilities**
+## Installation and Usage
 
-- `init_abl_fields` : Initialize ABL velocity and temperature profiles based on
-  user-defined tables.
-- `generate_planes` : Generate horizontal sampling planes at desired heights for
-  averaging statistics or source terms to drive ABL profiles.
+Please consult the [user manual](https://naluwindutils.readthedocs.io) for
+installation instructions and help using the available utilities. For assistance with issues, bugs, or questions please create an issue on the [issues page](https://github.com/NaluCFD/NaluWindUtils/issues). 
 
-**2-D Utilities**
+## Acknowledgements
 
-- `calc_ndtw2d` : Calculate the nearest distance to wall for a 2-D airfoil-like
-  geometry for use with RANS wall models.
-
-## WRF to Nalu conversion
-
-See [these instructions](./src/wrftonalu/README.md).
-
-## Build instructions
-
-  ```
-  git clone <repo_url>
-  cd nalu_utils
-  mkdir build
-  cd build
-  cp ../examples/doconfig.sh .
-  # Edit doconfig.sh to set Nalu/Trilinos paths appropriately
-  ./doconfig.sh
-  make
-  ```
-  
-Note that a Spack-based configuration example is also available
-`examples/doConfigSpack.sh`.
-
-Once compiled, the executables are available in `build/preprocessing/` directory. For
-example, `build/preprocessing/nalu_preprocess`. Example execution
-
-```
-mpiexec -np 1 preprocessing/nalu_preprocess -i nalu_preprocess.yaml
-```
+This software is developed by researchers at [NREL](https://www.nrel.gov) and
+[Sandia National Laboratories](http://www.sandia.gov) with funding from DOE's
+[Exascale Computing Project](https://exascaleproject.org) and DOE WETO
+[Atmosphere to electrons (A2e)](https://a2e.energy.gov) research initiative.

@@ -18,4 +18,4 @@ cmake \
   -DNetCDF_INCLUDE_DIR:PATH=$netcdf_install_dir/include \
   -DNetCDF_LIBRARY:PATH=$netcdf_install_dir/lib \
 $EXTRA_ARGS \
-../src
+..
