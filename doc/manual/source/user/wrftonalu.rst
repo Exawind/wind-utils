@@ -7,7 +7,7 @@ This program converts WRF data to the `Nalu <https://github.com/NaluCFD/Nalu>`_
 (Exodus II) data format. Exodus II is part of
 `SEACAS <https://gsjaardema.github.io/seacas>`_ and one can find other utilities to work
 with Exodus II files there. The objective is to provide Nalu with input WRF data
-as boundary conditions.
+as boundary conditions (and, optionally, initial conditions).
 
 This program was started as ``WRFTOOF``, a WRF to OpenFoam converter,
 which was written by J. Michalakes and M. Churchfield. It was adapted
@@ -30,7 +30,7 @@ where :file:`wrfout` is the WRF data file used to generate inflow conditions for
 the Nalu simulations. The user must provide the relevant boundary files in the
 run directory named :file:`west.g`, :file:`east.g`, :file:`south.g`,
 :file:`north.g`, :file:`lower.g`, and :file:`upper.g`. Only the boundaries where
-inflow data is requires needs to exist. The interpolated WRF data is written out
+inflow data is required need to exist. The interpolated WRF data is written out
 to files with extension ``*.nc`` for the corresponding grid files for use with
 Nalu. The following optional parameters can be supplied to customize the
 behavior of :program:`wrftonalu`.
