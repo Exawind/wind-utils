@@ -97,6 +97,29 @@ parameters.A sample input file is shown below
    For a trapezoidal prism, the code will interpret the major axis along
    ``1-2``, ``1-4``, and ``1-5`` edges respectively.
 
+.. confval:: fluid_part_name
+
+   Name of the element block created with HEX-8 elements. Default value:
+   ``fluid_part``.
+
+Boundary names
+~~~~~~~~~~~~~~~~
+
+The user has the option to provide custom boundary names through the input file.
+Use the boundary name input parameters to change the default parameters. If
+these are not provided the default boundary names are described below:
+
+======================  =====================
+Boundary                Default sideset name
+======================  =====================
+``xmin_boundary_name``  ``west``
+``xmax_boundary_name``  ``east``
+``ymin_boundary_name``  ``south``
+``ymax_boundary_name``  ``north``
+``zmin_boundary_name``  ``terrain``
+``zmax_boundary_name``  ``top``
+======================  =====================
+
 Limitations
 -----------
 

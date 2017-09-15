@@ -14,6 +14,7 @@
 //
 
 #include "HexBlockMesh.h"
+#include "core/YamlUtils.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -99,6 +100,8 @@ HexBlockMesh::~HexBlockMesh()
 
 void HexBlockMesh::load(const YAML::Node& node)
 {
+    using namespace sierra::nalu::wind_utils;
+
     if (node["spec_type"]) {
         std::string spec_type = node["spec_type"].as<std::string>();
 
@@ -128,6 +131,14 @@ void HexBlockMesh::load(const YAML::Node& node)
     }
 
     meshDims_ = node["mesh_dimensions"].as<std::vector<int>>();
+
+    get_optional(node, "fluid_part_name", blockName_);
+    get_optional(node, "xmin_boundary_name", ss_xmin_name_);
+    get_optional(node, "xmax_boundary_name", ss_xmax_name_);
+    get_optional(node, "ymin_boundary_name", ss_ymin_name_);
+    get_optional(node, "ymax_boundary_name", ss_ymax_name_);
+    get_optional(node, "zmin_boundary_name", ss_zmin_name_);
+    get_optional(node, "zmax_boundary_name", ss_zmax_name_);
 }
 
 void HexBlockMesh::initialize()
