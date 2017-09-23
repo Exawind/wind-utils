@@ -5,6 +5,7 @@ add_executable(nalu_preprocess
   SamplingPlanes.cpp
   ABLFields.cpp
   RotateMesh.cpp
+  BdyIOPlanes.cpp
 
   PreProcessDriver.cpp
   nalu_preprocess.cpp

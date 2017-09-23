@@ -8,13 +8,14 @@ This utility loads an input mesh and performs various pre-processing *tasks* so
 that the resulting output database can be used in a wind LES simulation.
 Currently, the following *tasks* have been implemented within this utility.
 
-====================  ===========================================================
-Task type             Description
-====================  ===========================================================
-``init_abl_fields``   Initialize ABL velocity and temperature fields
-``generate_planes``   Generate horizontal sampling planes for ``dp/dx`` forcing
-``rotate_mesh``       Rotate mesh
-====================  ===========================================================
+======================  ===========================================================
+Task type               Description
+======================  ===========================================================
+``init_abl_fields``     Initialize ABL velocity and temperature fields
+``generate_planes``     Generate horizontal sampling planes for ``dp/dx`` forcing
+``create_bdy_io_mesh``  Create an I/O transfer mesh for sampling inflow planes
+``rotate_mesh``         Rotate mesh
+======================  ===========================================================
 
 .. warning::
 
@@ -58,7 +59,8 @@ Common input file options
 
 .. confval:: output_db
 
-   Filename where the pre-processed results database is output, e.g., ``ablNeutralPrecursor.g``
+   Filename where the pre-processed results database is output, e.g.,
+   ``ablNeutralPrecursor.g``
 
 .. confval:: automatic_decomposition_type
 
@@ -117,7 +119,16 @@ Common input file options
         origin: [500.0, 0.0, 0.0]
         axis: [0.0, 0.0, 1.0]
 
+.. confval:: transfer_fields
 
+   A Boolean flag indicating whether the time histories of the fields available
+   in the input mesh database must be transferred to the output database.
+   Default: ``false``.
+
+.. confval:: ioss_8bit_ints
+
+   A Boolean flag indicating whether the output database must be written out
+   with 8-bit integer support. Default: ``false``.
 
 ``init_abl_fields``
 -------------------
@@ -248,6 +259,29 @@ Example using custom vertices
        - [500.0, -250.0]
        - [750.0, 0.0]
        - [500.0, 250.0]
+
+
+``create_bdy_io_mesh``
+----------------------
+
+Create an I/O transfer mesh containing the boundaries of a given ABL precursor
+mesh. The I/O transfer mesh can be used with Nalu during the precursor runs to
+dump inflow planes for use with a later wind farm LES simulation with
+inflow/outflow boundaries. Unlike other utilities described in this section,
+this utility creates a new mesh instead of adding to the database written out by
+the :program:`nalu_preprocess` executable. It is safe to invoke this task in a
+parallel MPI run.
+
+.. confval:: output_db
+
+   Name of the I/O transfer mesh where the boundary planes are written out. This
+   argument is mandatory.
+
+.. confval:: boundary_parts
+
+   A list of boundary parts that are saved in the I/O mesh. The names in the
+   list must correspond to the names of the sidesets in the given ABL mesh.
+
 
 ``rotate_mesh``
 ---------------
