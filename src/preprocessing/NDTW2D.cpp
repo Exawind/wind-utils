@@ -88,6 +88,8 @@ void NDTW2D::run()
     calc_ndtw();
     // Register this field for output during write
     mesh_.add_output_field(wall_dist_name_);
+
+    mesh_.set_write_flag();
 }
 
 void NDTW2D::calc_ndtw()

@@ -162,6 +162,8 @@ void SamplingPlanes::run()
     for (auto zh: heights_) {
         generate_zplane(zh);
     }
+
+    mesh_.set_write_flag();
 }
 
 void SamplingPlanes::calc_bounding_box()

@@ -91,6 +91,8 @@ void ABLFields::run()
     if (doVelocity_) init_velocity_field();
 
     if (doTemperature_) init_temperature_field();
+
+    mesh_.set_write_flag();
 }
 
 void ABLFields::load_velocity_info(const YAML::Node& abl)

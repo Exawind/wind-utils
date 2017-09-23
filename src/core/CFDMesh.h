@@ -54,6 +54,11 @@ public:
 
     ~CFDMesh() {}
 
+    /** Initialize the mesh database
+     *
+     *  If an input DB is provided, the mesh is read from the file. The MetaData
+     *  is committed and the BulkData is ready for use/manipulation.
+     */
     void init();
 
     inline stk::ParallelMachine& comm() { return comm_; }
@@ -106,6 +111,18 @@ public:
         stkio_.property_add(Ioss::Property("INTEGER_SIZE_API",8));
     }
 
+    //! Flag indicating whether the DB has been modified
+    inline bool db_modified()
+    {
+        return db_modified_ || (output_fields_.size() > 0);
+    }
+
+    //! Force output of the results DB
+    inline void set_write_flag()
+    {
+        db_modified_ = true;
+    }
+
 private:
     CFDMesh() = delete;
     CFDMesh(const CFDMesh&) = delete;
@@ -119,13 +136,16 @@ private:
     stk::mesh::BulkData bulk_;
 
     //! Filename for the mesh input database
-    std::string input_db_;
+    std::string input_db_{""};
 
     //! STK Mesh I/O handler
     stk::io::StkMeshIoBroker stkio_;
 
     //! List of fields registered for output
     std::unordered_set<std::string> output_fields_;
+
+    //! Flag indicating whether a results database must be written
+    bool db_modified_{false};
 };
 
 }  // nalu

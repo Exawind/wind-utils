@@ -100,15 +100,20 @@ void PreProcessDriver::run()
      }
 
     stk::parallel_machine_barrier(mesh_->bulk().parallel());
-    if (stk::parallel_machine_rank(comm_) == 0)
-        std::cout << "\nAll tasks completed; writing mesh... " << std::endl;
+    if (mesh_->db_modified()) {
+        if (stk::parallel_machine_rank(comm_) == 0)
+            std::cout << "\nAll tasks completed; writing mesh... " << std::endl;
 
-    if (transfer_fields_)
-        mesh_->write_database_with_fields(output_db_);
-    else
-        mesh_->write_database(output_db_);
-    if (stk::parallel_machine_rank(comm_) == 0)
-        std::cout << "Exodus results file: " << output_db_ << std::endl;
+        if (transfer_fields_)
+            mesh_->write_database_with_fields(output_db_);
+        else
+            mesh_->write_database(output_db_);
+        if (stk::parallel_machine_rank(comm_) == 0)
+            std::cout << "Exodus results file: " << output_db_ << std::endl;
+    } else {
+        if (stk::parallel_machine_rank(comm_) == 0)
+            std::cout << "Input mesh DB not modified; skipping write" << std::endl;
+    }
 }
 
 } // nalu

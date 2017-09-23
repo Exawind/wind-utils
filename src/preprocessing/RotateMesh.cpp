@@ -140,6 +140,8 @@ void RotateMesh::run()
             }
         }
     }
+
+    mesh_.set_write_flag();
 }
 
 }  // nalu
