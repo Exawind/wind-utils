@@ -188,8 +188,8 @@ void SamplingPlanes::calc_bounding_box()
 
         for(size_t in=0; in<bukt.size(); in++) {
             for(int i=0; i<ndim_; i++) {
-                if (pt[i] < bBoxMin[i]) bBoxMin[i] = pt[i];
-                if (pt[i] > bBoxMax[i]) bBoxMax[i] = pt[i];
+                if (pt[i] < bBoxMin[i]) bBoxMin[i] = pt[in * ndim_ + i];
+                if (pt[i] > bBoxMax[i]) bBoxMax[i] = pt[in * ndim_ + i];
             }
         }
     }

@@ -111,8 +111,8 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
 
         for (size_t in=0; in < num_nodes; in++) {
             for (unsigned int i=0; i<ndim; i++) {
-                bBoxMin[i] = std::min(bBoxMin[i], pt[i]);
-                bBoxMax[i] = std::max(bBoxMax[i], pt[i]);
+                bBoxMin[i] = std::min(bBoxMin[i], pt[in*ndim + i]);
+                bBoxMax[i] = std::max(bBoxMax[i], pt[in*ndim + i]);
             }
         }
     }
