@@ -56,6 +56,8 @@ public:
 
     void init();
 
+    inline stk::ParallelMachine& comm() { return comm_; }
+
     inline stk::mesh::MetaData& meta() { return meta_; }
 
     inline stk::mesh::BulkData& bulk() { return bulk_; }
