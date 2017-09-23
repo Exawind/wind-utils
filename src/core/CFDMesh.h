@@ -73,6 +73,10 @@ public:
      */
     void write_database(std::string output_db, double time=0.0);
 
+    /** Write database with restart fields
+     */
+    void write_database_with_fields(std::string output_db);
+
     /** Calculate the bounding box of the mesh
      *
      *  The selector can pick parts that are not contiguous. However, the

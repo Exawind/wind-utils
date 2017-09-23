@@ -67,6 +67,9 @@ private:
 
     //! Flag indicating whether 8-bit integer API must be activated
     bool io_8bit_int_{false};
+
+    //! Transfer fields if necessary
+    bool transfer_fields_{false};
 };
 
 } // nalu

@@ -14,6 +14,7 @@
 //
 
 #include "PreProcessDriver.h"
+#include "core/YamlUtils.h"
 #include <iostream>
 
 namespace sierra {
@@ -33,6 +34,7 @@ PreProcessDriver::PreProcessDriver
     const YAML::Node& data = inpfile_["nalu_preprocess"];
     std::string input_db = data["input_db"].as<std::string>();
     output_db_ = data["output_db"].as<std::string>();
+    wind_utils::get_optional(data, "transfer_fields", transfer_fields_);
 
     if (data["ioss_8bit_ints"]) {
         io_8bit_int_ = data["ioss_8bit_ints"].as<bool>();
@@ -100,7 +102,11 @@ void PreProcessDriver::run()
     stk::parallel_machine_barrier(mesh_->bulk().parallel());
     if (stk::parallel_machine_rank(comm_) == 0)
         std::cout << "\nAll tasks completed; writing mesh... " << std::endl;
-    mesh_->write_database(output_db_);
+
+    if (transfer_fields_)
+        mesh_->write_database_with_fields(output_db_);
+    else
+        mesh_->write_database(output_db_);
     if (stk::parallel_machine_rank(comm_) == 0)
         std::cout << "Exodus results file: " << output_db_ << std::endl;
 }

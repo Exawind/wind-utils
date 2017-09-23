@@ -90,6 +90,23 @@ void CFDMesh::write_database
     stkio_.end_output_step(fh);
 }
 
+/**
+ */
+void CFDMesh::write_database_with_fields(std::string output_db)
+{
+    size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESTART);
+    auto numSteps = stkio_.get_num_time_steps();
+    auto times = stkio_.get_time_steps();
+
+    for (int i=0; i<numSteps; i++) {
+        stkio_.read_defined_input_fields(i);
+        stkio_.begin_output_step(fh, times[i]);
+        stkio_.write_defined_output_fields(fh);
+        stkio_.end_output_step(fh);
+    }
+
+}
+
 BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verbose)
 {
     auto ndim = meta_.spatial_dimension();
