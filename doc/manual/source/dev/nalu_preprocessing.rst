@@ -6,7 +6,7 @@ Nalu Pre-processing Utilities
 NaluWindUtils provides several pre-processing utilities that are built as
 subclasses of :class:`sierra::nalu::PreProcessingTask`. These utilities are
 configured using a YAML input file and driven through the
-`sierra::nalu::PreProcessDriver` class -- see :ref:`util_nalu_preprocess_exe` for
+:class:`sierra::nalu::PreProcessDriver` class -- see :ref:`util_nalu_preprocess_exe` for
 documentation on the available input file options. All pre-processing utilities
 share a common interface and workflow through the
 :class:`sierra::nalu::PreProcessingTask` API, and there are three distinct
@@ -77,7 +77,14 @@ stage. Some tips for proper initialization of parts and fields:
     field if it should be saved in the result output ExodusII database. The
     default option is to not output all fields, this is to allow creation of
     temporary fields that might not be necessary for subsequent Nalu
-    simulations.
+    simulations. Field registration for output is achieved by calling
+    :meth:`mesh_.add_output_field` from within the :meth:`initialize` method.
+
+    .. code-block:: c++
+
+       // Register velocity and temperature fields for output
+       mesh_.add_output_field("velocity");
+       mesh_.add_output_field("temperature");
 
   - The *coordinates* field is registered on the universal part, so it is not
     strictly necessary to register this field on newly created parts.
