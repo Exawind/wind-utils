@@ -6,7 +6,7 @@ Nalu Pre-processing Utilities
 NaluWindUtils provides several pre-processing utilities that are built as
 subclasses of :class:`sierra::nalu::PreProcessingTask`. These utilities are
 configured using a YAML input file and driven through the
-`sierra::nalu::PreProcessDriver` class -- see `_util_nalu_preprocess_exe` for
+`sierra::nalu::PreProcessDriver` class -- see :ref:`util_nalu_preprocess_exe` for
 documentation on the available input file options. All pre-processing utilities
 share a common interface and workflow through the
 :class:`sierra::nalu::PreProcessingTask` API, and there are three distinct
@@ -32,10 +32,10 @@ the YAML input file. However, the classes must not assume existence or
 dependency on other task instances.
 
 The base class :class:`PreProcessingTask` already stores a reference to the
-:class:`CFDMesh` instance in ``mesh_``, that is accessible to subclasses via
+:class:`CFDMesh` instance in :attr:`mesh_`, that is accessible to subclasses via
 protected access. It is the responsibility of the individual task instances to
 process the YAML node during construction phase. Currently, this is typically
-done via the ``load``, a private method in the concrete task specialization
+done via the :meth:`load`, a private method in the concrete task specialization
 class.
 
 No actions on STK MetaData or BulkData instances should be performed during the
@@ -62,7 +62,7 @@ registration, must be performed during this phase. No
 stage. Some tips for proper initialization of parts and fields:
 
   - Access to :class:`stk::mesh::MetaData` and :class:`stk::mesh::BulkData` is
-    through ``mesh_.meta()`` and ``mesh_.bulk()`` respectively. They return
+    through :meth:`mesh_.meta()` and :meth:`mesh_.bulk()` respectively. They return
     non-const references to the instances stored in the mesh object.
 
   - Use :meth:`MetaData::get_part` to check for the existence of a part in the
@@ -107,5 +107,22 @@ Task Destruction Phase
 
 All *task* implementations must provide proper cleanup procedures via
 destructors. No explicit clean up task methods are called by the driver utility.
-The preprocessing utility depends on C++ destruction actions to free resources
+The preprocessing utility depends on C++ destructor actions to free resources
 etc.
+
+Registering New Utility
+-----------------------
+
+The :class:`sierra::nalu::PreProcessingTask` class uses a runtime selection
+mechanism to discover and initialize available utilities. To achieve this, new
+utilities must be registered by invoking a pre-defined macro
+(``REGISTER_DERIVED_CLASS``) that wrap the logic necessary to register classes
+with the base class. For example, to register a new utility ``MyNewUtility`` the developer must add the following line
+
+.. code-block:: c++
+
+   REGISTER_DERIVED_CLASS(PreProcessingTask, MyNewUtility, "my_new_utility");
+
+where ``my_new_utility`` is the lookup *type* (see :confval:`tasks`) used by the
+driver when processing the YAML input file. Note that this macro must be invoked
+from within the ``sierra::nalu`` namespace.
