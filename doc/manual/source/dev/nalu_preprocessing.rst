@@ -130,6 +130,7 @@ with the base class. For example, to register a new utility ``MyNewUtility`` the
 
    REGISTER_DERIVED_CLASS(PreProcessingTask, MyNewUtility, "my_new_utility");
 
-where ``my_new_utility`` is the lookup *type* (see :confval:`tasks`) used by the
-driver when processing the YAML input file. Note that this macro must be invoked
-from within the ``sierra::nalu`` namespace.
+in the C++ implementation file (i.e., the ``.cpp`` file and not the ``.h``
+header file). In the above example, ``my_new_utility`` is the lookup *type* (see
+:confval:`tasks`) used by the driver when processing the YAML input file. Note
+that this macro must be invoked from within the ``sierra::nalu`` namespace.
