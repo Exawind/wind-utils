@@ -61,6 +61,10 @@ public:
     template<typename T>
     using Array2D = std::vector<std::vector<T>>;
 
+    /**
+     * \param mesh A sierra::nalu::CFDMesh instance
+     * \param node The YAML::Node containing inputs for this task
+     */
     ABLFields(CFDMesh&, const YAML::Node&);
 
     virtual ~ABLFields() {}

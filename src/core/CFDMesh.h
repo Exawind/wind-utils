@@ -46,9 +46,19 @@ typedef stk::search::Box<double> BoxType;
 class CFDMesh
 {
 public:
+    /**Create a CFD mesh instance from an existing mesh database
+     *
+     * \param comm MPI Communicator object
+     * \param filename Exodus database filename
+     */
     explicit CFDMesh(stk::ParallelMachine&,
             const std::string filename);
 
+    /**Create a CFD mesh instance from scratch
+     *
+     * \param comm MPI Communicator object
+     * \param ndim Dimensionality of mesh
+     */
     explicit CFDMesh(stk::ParallelMachine&,
                      const int ndim);
 
@@ -61,15 +71,21 @@ public:
      */
     void init();
 
+    //! Reference to the MPI communicator object
     inline stk::ParallelMachine& comm() { return comm_; }
 
+    //! Reference to the stk::mesh::MetaData instance
     inline stk::mesh::MetaData& meta() { return meta_; }
 
+    //! Reference to the stk::mesh::BulkData instance
     inline stk::mesh::BulkData& bulk() { return bulk_; }
 
+    //! Reference to the STK mesh I/O instance
     inline stk::io::StkMeshIoBroker& stkio() { return stkio_; }
 
     /** Register a field for output during write
+     *
+     * \param Name of the field to be output
      */
     inline void add_output_field(const std::string field)
     {
@@ -77,10 +93,20 @@ public:
     }
 
     /** Write the Exodus results database with modifications
+     *
+     *  \param output_db Pathname to the output ExodusII database
+     *  \param time Timestep to write
+     *
+     *  \sa write_database_with_fields
      */
     void write_database(std::string output_db, double time=0.0);
 
     /** Write database with restart fields
+     *
+     *  Copies the restart data fields from the input Exodus database to the
+     *  output database.
+     *
+     *  \param output_db Pathname to the output ExodusII database
      */
     void write_database_with_fields(std::string output_db);
 
@@ -99,12 +125,18 @@ public:
     BoxType calc_bounding_box(const stk::mesh::Selector, bool verbose=true);
 
     /** Set automatic mesh decomposition property
+     *
+     *  \param The decomposition type
+     *
+     *  Valid decomposition types are: rcb, rib, block, linear
      */
     inline void set_decomposition_type(std::string decompType)
     {
         stkio_.property_add(Ioss::Property("DECOMPOSITION_METHOD", decompType));
     }
 
+    /** Force output database to use 8-bit integers
+     */
     inline void set_64bit_flags()
     {
         stkio_.property_add(Ioss::Property("INTEGER_SIZE_DB",8));

@@ -39,12 +39,21 @@ public:
         VERTICES       ///< Provide vertices for the cuboidal domain
     };
 
+    /**
+     * \param mesh A sierra::nalu::CFDMesh instance
+     * \param node The YAML::Node containing inputs for this task
+     */
     HexBlockMesh(CFDMesh&, const YAML::Node&);
 
     virtual ~HexBlockMesh();
 
+    /** Registers the element block and the sidesets to the STK MetaData instance
+     */
     virtual void initialize();
 
+    /** Creates the nodes and elements within the mesh block, processes
+     * sidesets, and initializes the coordinates of the mesh structure.
+     */
     virtual void run();
 
 private:
@@ -60,8 +69,13 @@ private:
     //! Generate coordinates
     void generate_coordinates(const std::vector<stk::mesh::EntityId>&);
 
+    //! Generate the xmin and xmax sidesets
     void generate_x_boundary(const std::vector<stk::mesh::EntityId>&, const int);
+
+    //! Generate the ymin and ymax sidesets
     void generate_y_boundary(const std::vector<stk::mesh::EntityId>&, const int);
+
+    //! Generate the zmin and zmax sidesets
     void generate_z_boundary(const std::vector<stk::mesh::EntityId>&, const int);
 
     //! STK Metadata object
@@ -84,11 +98,22 @@ private:
 
     // Names for the boundary sidesets
 
+    //! Name of the XMIN sideset
     std::string ss_xmin_name_{"west"};
+
+    //! Name of the XMAX sideset
     std::string ss_xmax_name_{"east"};
+
+    //! Name of the YMIN sideset
     std::string ss_ymin_name_{"south"};
+
+    //! Name of the YMAX sideset
     std::string ss_ymax_name_{"north"};
+
+    //! Name of the ZMIN sideset
     std::string ss_zmin_name_{"terrain"};
+
+    //! Name of the ZMAX sideset
     std::string ss_zmax_name_{"top"};
 
     //! Flag indicating user selection of domain extents

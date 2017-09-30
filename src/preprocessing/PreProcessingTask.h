@@ -48,14 +48,24 @@ class PreProcessingTask
 {
 public:
     /**
-     * \param mesh A CFDMesh instance
+     * \param mesh A sierra::nalu::CFDMesh instance
      */
     PreProcessingTask(CFDMesh& mesh) : mesh_(mesh) {}
 
     virtual ~PreProcessingTask() {}
 
+    /** Initialize the STK MetaData instance.
+     *
+     *  This method handles the registration and creation of new parts and
+     *  fields. All subclasses must implement this method.
+     */
     virtual void initialize() = 0;
 
+    /** Process the STK BulkData instance
+     *
+     *  This method handles the creating of new entities, manipulating
+     *  coordinates, and populating fields.
+     */
     virtual void run() = 0;
 
     DECLARE_INHERITANCE_REGISTRY

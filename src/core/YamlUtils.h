@@ -23,6 +23,15 @@ namespace sierra {
 namespace nalu {
 namespace wind_utils {
 
+/** Fetch an optional entry from the YAML dictionary if it exists
+ *
+ *  The result parameter is unchanged if the entry is not found in the YAML
+ *  dictionary.
+ *
+ *  \param node The YAML::Node instance to be examined
+ *  \param key  The name of the variable to be extracted
+ *  \param result The variable that is updated with the value if it exists
+ */
 template<typename T>
 bool get_optional(const YAML::Node& node, const std::string& key, T& result)
 {
@@ -35,6 +44,18 @@ bool get_optional(const YAML::Node& node, const std::string& key, T& result)
     return found;
 }
 
+/** Fetch an optional entry from the YAML dictionary if it exists
+ *
+ *  The result parameter is updated with the value from the dictionary if it
+ *  exists, otherwise it is initialized with the default value provided.
+ *
+ *  \param node The YAML::Node instance to be examined
+ *  \param key  The name of the variable to be extracted
+ *  \param result The variable that is updated with the value if it exists
+ *
+ *  \param default_value The default value to be used if the parameter is not
+ *  found in the dictionary.
+ */
 template<typename T>
 bool get_optional(const YAML::Node& node, const std::string& key, T& result, const T& default_value)
 {

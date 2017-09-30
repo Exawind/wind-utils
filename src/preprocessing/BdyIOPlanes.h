@@ -30,6 +30,10 @@ namespace nalu {
 class BdyIOPlanes: public PreProcessingTask
 {
 public:
+    /**
+     * \param mesh A sierra::nalu::CFDMesh instance
+     * \param node The YAML::Node containing inputs for this task
+     */
     BdyIOPlanes(CFDMesh&, const YAML::Node&);
 
     virtual ~BdyIOPlanes();

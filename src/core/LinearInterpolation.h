@@ -55,16 +55,29 @@ struct OutOfBounds
 template <typename T>
 using Array1D = std::vector<T>;
 
+/** Useful type definitions for tracking interpolation data
+ */
 template <typename T>
 struct InterpTraits
 {
   typedef typename Array1D<T>::size_type size_type;
+
+  /** A pair indicating whether the point to be interpolate is within bounds
+   * or out of bounds and a corresponding index. If the point is within bounds
+   * then the index returned is such that `xarray[i] <= xtarget <
+   * xarray[i+1]`. For out of bounds, the index is either 0 or IMAX-1.
+   */
   typedef typename std::pair<OutOfBounds::boundLimits, size_type> index_type;
 };
 
 /**
  * Determine whether the given value is within the limits of the interpolation
  * table
+ *
+ * \param xinp 1-D array of monotonically increasing values
+ * \param x The value to check for
+ *
+ * \result A std::pair containing the OutOfBounds flag and the index (0 or MAX)
  */
 template <typename T>
 inline typename InterpTraits<T>::index_type
@@ -90,7 +103,10 @@ check_bounds(const Array1D<T>& xinp, const T& x)
  * Return an index object corresponding to the x-value based on interpolation
  * table.
  *
- * The `std::pair` returned contains two values: the bounds indicator and the
+ * \param xinp 1-D array of monotonically increasing values
+ * \param x The value to check for
+ *
+ * \return The `std::pair` returned contains two values: the bounds indicator and the
  * index of the element in the interpolation table such that `xarray[i] <= x <
  * xarray[i+1]`
  */
@@ -115,7 +131,7 @@ find_index(const Array1D<T>& xinp, const T& x)
 /**
  * Perform a 1-D linear interpolation
  *
- * \param xinp A 1-d vector of x-values
+ * \param xinp A 1-d vector of monotonically increasing x-values
  * \param yinp Corresponding 1-d vector of y-values
  * \param xout Target x-value for interpolation
  * \param yout Interpolated value at `xout`

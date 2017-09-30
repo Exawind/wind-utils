@@ -27,10 +27,6 @@
 namespace sierra {
 namespace nalu {
 
-/**
- * \param comm MPI Communicator object
- * \param filename Exodus database filename
- */
 CFDMesh::CFDMesh
 (
     stk::ParallelMachine& comm,
