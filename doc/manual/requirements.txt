@@ -1,3 +1,7 @@
 # Extra packages required for building documentation on ReadTheDocs
 
+sphinx
+Pygments
+sphinx-rtd-theme
+readthedocs-sphinx-ext
 breathe

@@ -26,12 +26,16 @@ import subprocess
 
 # Are we running this on ReadTheDocs
 on_rtd = os.environ.get("READTHEDOCS") == 'True'
+
+# Only build API docs if the user specifically requests it. On RTD we build it
+# all the time
 use_breathe = tags.has("use_breathe") or on_rtd
 
 if on_rtd:
     try:
-        subprocess.call("cd ../../doxygen; doxygen Doxyfile.rtd")
+        subprocess.call("cd ../../doxygen; doxygen Doxyfile.rtd", shell=True)
     except:
+        # Gracefully bailout if doxygen encounters errors
         use_breathe = False
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -192,3 +196,4 @@ def setup(app):
                         indextemplate="pair: %s; CMake configuration")
 
     app.add_config_value("use_breathe", use_breathe, 'env')
+    app.add_config_value("on_rtd", on_rtd, 'env')
