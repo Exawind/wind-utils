@@ -17,6 +17,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import subprocess
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -25,6 +26,13 @@ import os
 
 # Are we running this on ReadTheDocs
 on_rtd = os.environ.get("READTHEDOCS") == 'True'
+use_breathe = tags.has("use_breathe") or on_rtd
+
+if on_rtd:
+    try:
+        subprocess.call("cd ../../doxygen; doxygen Doxyfile.rtd")
+    except:
+        use_breathe = False
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
@@ -34,9 +42,12 @@ on_rtd = os.environ.get("READTHEDOCS") == 'True'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.intersphinx',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages']
+              'sphinx.ext.mathjax',
+              'sphinx.ext.ifconfig',
+              'sphinx.ext.githubpages']
+
+if use_breathe:
+    extensions.append('breathe')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -163,11 +174,14 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+### Breathe configuration
+breathe_projects = {
+    'naluwindutils' : '../../doxygen/xml/'
+}
 
+breathe_default_project = "naluwindutils"
 
-
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+primary_domain = "cpp"
 
 def setup(app):
     app.add_object_type("confval", "confval",
@@ -176,3 +190,5 @@ def setup(app):
     app.add_object_type("cmakeval", "cmakeval",
                         objname="CMake configuration value",
                         indextemplate="pair: %s; CMake configuration")
+
+    app.add_config_value("use_breathe", use_breathe, 'env')

@@ -1,0 +1,3 @@
+# Extra packages required for building documentation on ReadTheDocs
+
+breathe
