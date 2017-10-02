@@ -103,7 +103,7 @@ parameters.A sample input file is shown below
    ``fluid_part``.
 
 Boundary names
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 The user has the option to provide custom boundary names through the input file.
 Use the boundary name input parameters to change the default parameters. If
@@ -120,10 +120,38 @@ Boundary                Default sideset name
 ``zmax_boundary_name``  ``top``
 ======================  =====================
 
+Mesh spacing
+~~~~~~~~~~~~
+
+Users can specify the mesh spacing to be applied in each direction by adding
+additional sections (``x_spacing``, ``y_spacing``, and ``z_spacing``
+respectively) to the input file. If no option is specified then a constant mesh
+spacing is used in that direction.
+
+========================== ===============================================
+Available options          Implementation
+========================== ===============================================
+``constant_spacing``       :class:`~sierra::nalu::ConstantSpacing`
+``geometric_stretching``   :class:`~sierra::nalu::GeometricStretching`
+========================== ===============================================
+
+**Example input file**
+
+.. code-block:: yaml
+
+   # Specifiy constant spacing in x direction (this is the default)
+   x_spacing:
+     spacing_type: constant_spacing
+
+   # No spacing type specified for y, taken to be constant_spacing
+
+   # z direction has a mesh stretching factor
+   z_spacing:
+     spacing_type: geometric_stretching
+     stretching_factor: 1.1
+
 Limitations
 -----------
-
-#. Currently the code is setup to only generate constant size grids in each direction.
 
 #. Does not support the ability to generate multiple blocks
 

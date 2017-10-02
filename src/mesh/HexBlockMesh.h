@@ -17,6 +17,7 @@
 #define HEXBLOCKMESH_H
 
 #include "core/CFDMesh.h"
+#include "spacing/MeshSpacing.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -90,8 +91,9 @@ private:
     //! Mesh dimensions in each direction
     std::vector<int> meshDims_;
 
-    //! Stretch factor
-    std::array<double, 3> stretchFactor{{1.0, 1.0, 1.0}};
+    std::unique_ptr<MeshSpacing> xSpacing_;
+    std::unique_ptr<MeshSpacing> ySpacing_;
+    std::unique_ptr<MeshSpacing> zSpacing_;
 
     //! Name of the fluid domain block
     std::string blockName_{"fluid_part"};
@@ -115,6 +117,15 @@ private:
 
     //! Name of the ZMAX sideset
     std::string ss_zmax_name_{"top"};
+
+    //! Spacing type in x-direction
+    std::string xspacing_type_{"constant_spacing"};
+
+    //! Spacing type in y-direction
+    std::string yspacing_type_{"constant_spacing"};
+
+    //! Spacing type in z-direction
+    std::string zspacing_type_{"constant_spacing"};
 
     //! Flag indicating user selection of domain extents
     DomainExtentsType vertexDef_{BOUND_BOX};

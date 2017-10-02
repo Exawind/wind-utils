@@ -139,6 +139,35 @@ void HexBlockMesh::load(const YAML::Node& node)
     get_optional(node, "ymax_boundary_name", ss_ymax_name_);
     get_optional(node, "zmin_boundary_name", ss_zmin_name_);
     get_optional(node, "zmax_boundary_name", ss_zmax_name_);
+
+    // Process mesh spacing inputs
+
+    if (node["x_spacing"]) {
+        auto& xsnode = node["x_spacing"];
+        get_optional(xsnode, "spacing_type", xspacing_type_);
+
+        xSpacing_.reset(MeshSpacing::create(meshDims_[0]+1, xsnode, xspacing_type_));
+    } else {
+        xSpacing_.reset(MeshSpacing::create(meshDims_[0]+1, node, xspacing_type_));
+    }
+
+    if (node["y_spacing"]) {
+        auto& ysnode = node["y_spacing"];
+        get_optional(ysnode, "spacing_type", yspacing_type_);
+
+        ySpacing_.reset(MeshSpacing::create(meshDims_[1]+1, ysnode, yspacing_type_));
+    } else {
+        ySpacing_.reset(MeshSpacing::create(meshDims_[1]+1, node, yspacing_type_));
+    }
+
+    if (node["z_spacing"]) {
+        auto& zsnode = node["z_spacing"];
+        get_optional(zsnode, "spacing_type", zspacing_type_);
+
+        zSpacing_.reset(MeshSpacing::create(meshDims_[2]+1, zsnode, zspacing_type_));
+    } else {
+        zSpacing_.reset(MeshSpacing::create(meshDims_[2]+1, node, zspacing_type_));
+    }
 }
 
 void HexBlockMesh::initialize()
@@ -335,17 +364,24 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    // TODO: implement stretching factors
-    double dx = 1.0 / static_cast<double>(meshDims_[0]);
-    double dy = 1.0 / static_cast<double>(meshDims_[1]);
-    double dz = 1.0 / static_cast<double>(meshDims_[2]);
+    // // TODO: implement stretching factors
+    // double dx = 1.0 / static_cast<double>(meshDims_[0]);
+    // double dy = 1.0 / static_cast<double>(meshDims_[1]);
+    // double dz = 1.0 / static_cast<double>(meshDims_[2]);
+    xSpacing_->init_spacings();
+    ySpacing_->init_spacings();
+    zSpacing_->init_spacings();
+
+    auto& rxvec = xSpacing_->ratios();
+    auto& ryvec = ySpacing_->ratios();
+    auto& rzvec = zSpacing_->ratios();
 
     for (int k=0; k < nz; k++) {
-        double rz = k * dz;
+        double rz = rzvec[k];
         for (int j=0; j < ny; j++) {
-            double ry = j * dy;
+            double ry = ryvec[j];
             for (int i=0; i < nx; i++) {
-                double rx = i * dx;
+                double rx = rxvec[i];
                 int idx = k * (nx * ny) + j * nx + i;
                 auto node = bulk_.get_entity(stk::topology::NODE_RANK, nodeVec[idx]);
                 double* pt = stk::mesh::field_data(*coords, node);
