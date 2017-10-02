@@ -67,6 +67,9 @@ private:
 
     //! Flag indicating whether the geometric stretching is applied at both ends.
     bool bidirectional_{false};
+
+    //! Flag indicating whether to dump spacing array to screen
+    bool verbose_{false};
 };
 
 }  // nalu

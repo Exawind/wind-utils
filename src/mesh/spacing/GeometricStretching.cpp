@@ -35,6 +35,7 @@ GeometricStretching::GeometricStretching(
 void GeometricStretching::load(const YAML::Node& node)
 {
     wind_utils::get_optional(node, "bidirectional", bidirectional_);
+    wind_utils::get_optional(node, "verbose", verbose_);
     fac_ = node["stretching_factor"].as<double>();
 
     int ny = bidirectional_? (numPts_ - 1)/2 + (numPts_ - 1) % 2: (numPts_ - 1);
@@ -48,6 +49,10 @@ void GeometricStretching::init_spacings()
         unidirectional_stretching();
     else
         bidirectional_stretching();
+
+    if (verbose_)
+        for (int i=0; i < numPts_; i++)
+            std::cerr << i << "\t" << ratios_[i] << std::endl;
 }
 
 void GeometricStretching::bidirectional_stretching()
@@ -63,8 +68,6 @@ void GeometricStretching::bidirectional_stretching()
         rfac *= fac_;
     }
 
-    for (int i=0; i < numPts_; i++)
-        std::cerr << i << "\t" << ratios_[i] << std::endl;
 }
 
 void GeometricStretching::unidirectional_stretching()
@@ -73,7 +76,6 @@ void GeometricStretching::unidirectional_stretching()
     double rfac = 1.0;
     for (int i=1; i < numPts_; i++) {
         ratios_[i] = ratios_[i-1] + fch_ * rfac;
-        std::cerr << i << "\t" << ratios_[i] << std::endl;
         rfac *= fac_;
     }
 }

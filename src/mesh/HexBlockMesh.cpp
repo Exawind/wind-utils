@@ -364,12 +364,11 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    // // TODO: implement stretching factors
-    // double dx = 1.0 / static_cast<double>(meshDims_[0]);
-    // double dy = 1.0 / static_cast<double>(meshDims_[1]);
-    // double dz = 1.0 / static_cast<double>(meshDims_[2]);
+    std::cout << "\t Generating x spacing: " << xspacing_type_ << std::endl;
     xSpacing_->init_spacings();
+    std::cout << "\t Generating y spacing: " << yspacing_type_ <<  std::endl;
     ySpacing_->init_spacings();
+    std::cout << "\t Generating z spacing: " << zspacing_type_ << std::endl;
     zSpacing_->init_spacings();
 
     auto& rxvec = xSpacing_->ratios();
