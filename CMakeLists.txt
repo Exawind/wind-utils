@@ -21,6 +21,7 @@ set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
 option(ENABLE_WRFTONALU "Enable WRF to Nalu Fortran conversion utility" off)
 option(ENABLE_SPHINX_DOCS "Enable Sphinx-based user/developer manual" off)
 option(ENABLE_DOXYGEN_DOCS "Enable API documentation using Doxygen" off)
+option(ENABLE_SPHINX_API_DOCS "Enable linking Doxygen API documentation to Sphinx" off)
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)

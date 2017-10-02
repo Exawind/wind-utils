@@ -250,6 +250,11 @@ previous section.
 
    Boolean flag to enable extract source code documentation using Doxygen. Default: OFF.
 
+.. cmakeval:: ENABLE_SPHINX_API_DOCS
+
+   Enable embedding API documentation generated from Doxygen within user and
+   developer manuals. Default: OFF.
+
 Further fine-grained control of the build environment can be achieved by using
 standard CMake flags, please see `CMake documentation
 <https://cmake.org/cmake/help/v3.9/>`_ for details regarding these variables.
