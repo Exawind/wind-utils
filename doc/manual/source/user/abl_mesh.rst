@@ -143,12 +143,16 @@ Available options          Implementation
    x_spacing:
      spacing_type: constant_spacing
 
-   # No spacing type specified for y, taken to be constant_spacing
+   # y direction has a mesh stretching factor
+   y_spacing:
+     spacing_type: geometric_stretching
+     stretching_factor: 1.1
 
-   # z direction has a mesh stretching factor
+   # z direction has a mesh stretching factor in both directions
    z_spacing:
      spacing_type: geometric_stretching
      stretching_factor: 1.1
+     bidirectional: true
 
 Limitations
 -----------
