@@ -8,15 +8,15 @@ This utility loads an input mesh and performs various pre-processing *tasks* so
 that the resulting output database can be used in a wind LES simulation.
 Currently, the following *tasks* have been implemented within this utility.
 
-======================  ===========================================================
-Task type               Description
-======================  ===========================================================
-``init_abl_fields``     Initialize ABL velocity and temperature fields
-``init_abl_fields``     Initialize channel velocity fields
-``generate_planes``     Generate horizontal sampling planes for ``dp/dx`` forcing
-``create_bdy_io_mesh``  Create an I/O transfer mesh for sampling inflow planes
-``rotate_mesh``         Rotate mesh
-======================  ===========================================================
+=======================  ===========================================================
+Task type                Description
+=======================  ===========================================================
+``init_abl_fields``      Initialize ABL velocity and temperature fields
+``init_channel_fields``  Initialize channel velocity fields
+``generate_planes``      Generate horizontal sampling planes for ``dp/dx`` forcing
+``create_bdy_io_mesh``   Create an I/O transfer mesh for sampling inflow planes
+``rotate_mesh``          Rotate mesh
+=======================  ===========================================================
 
 .. warning::
 
