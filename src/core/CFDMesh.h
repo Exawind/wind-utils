@@ -85,7 +85,7 @@ public:
 
     /** Register a field for output during write
      *
-     * \param Name of the field to be output
+     * \param field Name of the field to be output
      */
     inline void add_output_field(const std::string field)
     {
@@ -126,7 +126,7 @@ public:
 
     /** Set automatic mesh decomposition property
      *
-     *  \param The decomposition type
+     *  \param decompType The decomposition type
      *
      *  Valid decomposition types are: rcb, rib, block, linear
      */

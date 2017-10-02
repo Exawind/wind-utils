@@ -12,6 +12,7 @@ Currently, the following *tasks* have been implemented within this utility.
 Task type               Description
 ======================  ===========================================================
 ``init_abl_fields``     Initialize ABL velocity and temperature fields
+``init_abl_fields``     Initialize channel velocity fields
 ``generate_planes``     Generate horizontal sampling planes for ``dp/dx`` forcing
 ``create_bdy_io_mesh``  Create an I/O transfer mesh for sampling inflow planes
 ``rotate_mesh``         Rotate mesh
@@ -169,6 +170,35 @@ and writes it out to the :confval:`output_db`. It is safe to run
    an entry in the input file. This can be used to speed up the execution
    process if the user intends to initialize uniform velocity throughout the
    domain within Nalu.
+
+``init_channel_fields``
+-----------------------
+
+This task initializes the velocity fields for channel flow simulations
+based on the parameters provided by the user and writes it out to the
+:confval:`output_db`. It is safe to run ``init_channel_fields`` in
+parallel. A sample invocation is shown below
+
+.. code-block:: yaml
+   :linenos:
+
+   init_channel_fields:
+     fluid_parts: [Unspecified-2-HEX]
+
+     velocity:
+       Re_tau : 550
+       viscosity : 0.0000157
+
+.. confval:: fluid_parts
+
+   A list of element block names where the velocity fields are to be
+   initialized.
+
+.. confval:: velocity
+
+   A YAML dictionary containing two values: the friction Reynolds
+   number, ``Re_tau``, and the kinematic ``viscosity``
+   (:math:`m^2/s`).
 
 ``generate_planes``
 -------------------
