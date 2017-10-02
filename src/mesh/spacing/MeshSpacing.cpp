@@ -28,13 +28,8 @@ MeshSpacing::create(
     const YAML::Node& node,
     std::string lookup)
 {
-    if (MeshSpacingReg_ConstructorTable_ == nullptr) {
-        std::cerr << "Null pointer" << std::endl;
-        return nullptr;
-    }
     auto it = MeshSpacingReg_ConstructorTable_->find(lookup);
     if (it != MeshSpacingReg_ConstructorTable_->end()) {
-        std::cerr << lookup << std::endl;
         return (it->second)(npts, node);
     } else {
         std::cout << "ERROR: Invalid mesh spacing => " << lookup << std::endl;
