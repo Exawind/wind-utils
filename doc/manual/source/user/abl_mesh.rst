@@ -64,7 +64,7 @@ parameters.A sample input file is shown below
      mesh_dimensions: [10, 10, 10]
 
 
-.. confval:: output_db
+.. confval:: output_db [nalu_abl_mesh]
 
    The Exodus-II filename where the mesh is output. No default, must be provided
    by the user.
@@ -101,6 +101,11 @@ parameters.A sample input file is shown below
 
    Name of the element block created with HEX-8 elements. Default value:
    ``fluid_part``.
+
+.. confval:: ioss_8bit_ints
+
+   Boolean flag that enables output of 8-bit ints when writing Exodus mesh.
+   Default value: true.
 
 Boundary names
 ~~~~~~~~~~~~~~

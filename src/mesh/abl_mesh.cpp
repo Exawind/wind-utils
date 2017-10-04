@@ -19,6 +19,7 @@
  */
 
 #include "mesh/HexBlockMesh.h"
+#include "core/YamlUtils.h"
 
 #include "stk_util/parallel/Parallel.hpp"
 #include "stk_io/WriteMesh.hpp"
@@ -82,7 +83,10 @@ int main(int argc, char** argv)
     blockMesh.run();
 
     std::cout << "Writing mesh to file: " << output_db << std::endl;
-    mesh->set_64bit_flags();
+    bool set_64bit = true;
+    sierra::nalu::wind_utils::get_optional(node, "ioss_8bit_ints", set_64bit);
+
+    if (set_64bit) mesh->set_64bit_flags();
     auto& stkio = mesh->stkio();
     stkio.set_bulk_data(mesh->bulk());
     mesh->write_database(output_db);
