@@ -68,8 +68,26 @@ private:
     //! Helper function to parse and initialize velocity inputs
     void load_velocity_info(const YAML::Node&);
 
+    //! Helper function to parse and initialize tke inputs
+    void load_tke_info(const YAML::Node&);
+
+    //! Helper function to setup the channel flow parameters
+    void setup_parameters();
+
+    //! Reichardt function
+    double reichardt(const double y);
+
+    //! Perturbation function for u
+    double u_perturbation(const double x, const double y, const double z);
+
+    //! Perturbation function for w
+    double w_perturbation(const double x, const double y, const double z);
+
     //! Initialize the velocity field through linear interpolation
     void init_velocity_field();
+
+    //! Initialize the tke field through linear interpolation
+    void init_tke_field();
 
     //! STK Metadata object
     stk::mesh::MetaData& meta_;
@@ -86,8 +104,26 @@ private:
     //! Flag indicating whether velocity is initialized
     bool doVelocity_;
 
-    //! Skin friction velocity
+    //! Flag indicating whether turbulent kinetic energy is initialized
+    bool doTKE_;
+
+    //! Bounding box length (x-direction)
+    double length_;
+
+    //! Bounding box length (z-direction)
+    double width_;
+
+    //! Bounding box length (y-direction)
+    double height_;
+
+    //! Reichardt function integration parameter
+    double C_;
+
+    //! Skin friction Reynolds number
     double Re_tau_;
+
+    //! Skin friction velocity
+    double utau_;
 
     //! Kinematic viscosity
     double viscosity_;
@@ -104,11 +140,17 @@ private:
     //! Wavenumber of sinusoidal perturbation for w
     const int k_pert_w_ = 16;
 
+    //! Amplitude of sinusoidal perturbation for u
+    const int a_pert_u_ = 10;
+
+    //! Amplitude of sinusoidal perturbation for w
+    const int a_pert_w_ = 10;
+
     //! Amplitude of random perturbation for u
-    const double a_rand_u_ = 0.2;
+    const double a_rand_u_ = 5;
 
     //! Amplitude of random perturbation for w
-    const double a_rand_w_ = 0.2;
+    const double a_rand_w_ = 5;
 };
 
 }
