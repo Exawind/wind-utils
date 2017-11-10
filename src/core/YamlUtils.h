@@ -16,6 +16,8 @@
 /** \file
  * Miscellaneous utilities for working with YAML C++ library
  */
+#ifndef YAMLUTILS_H
+#define YAMLUTILS_H
 
 #include "yaml-cpp/yaml.h"
 
@@ -69,3 +71,5 @@ bool get_optional(const YAML::Node& node, const std::string& key, T& result, con
 }  // wind_utils
 }  // nalu
 }  // sierra
+
+#endif /* YAMLUTILS_H */

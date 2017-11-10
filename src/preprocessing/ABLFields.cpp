@@ -162,6 +162,7 @@ void ABLFields::init_velocity_field()
 
 void ABLFields::init_temperature_field()
 {
+    std::cerr << "Temperature" << std::endl;
     stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);

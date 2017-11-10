@@ -69,7 +69,7 @@ public:
      *  If an input DB is provided, the mesh is read from the file. The MetaData
      *  is committed and the BulkData is ready for use/manipulation.
      */
-    void init();
+    void init(stk::io::DatabasePurpose db_purpose = stk::io::READ_MESH);
 
     //! Reference to the MPI communicator object
     inline stk::ParallelMachine& comm() { return comm_; }

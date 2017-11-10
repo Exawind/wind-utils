@@ -1,0 +1,25 @@
+# Example input file for Nalu Post-processing utility
+
+nalu_postprocess:
+
+  # Name of the solution results or restart database
+  input_db: rst/precursor.e
+
+  # List of post-processing tasks to be performed
+  tasks:
+    - abl_statistics
+
+  # Input parameters for the post-processing tasks
+  abl_statistics:
+    fluid_parts:
+      - Unspecified-2-HEX
+
+    field_map:
+      velocity: velocity_raone
+      temperature: temperature_raone
+      sfs_stress: sfs_stress_raone
+
+    height_info:
+      min_height: 0.0
+      max_height: 1000.0
+      delta_height: 10.0

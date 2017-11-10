@@ -48,12 +48,12 @@ CFDMesh::CFDMesh
     stkio_(comm)
 {}
 
-void CFDMesh::init()
+void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
 {
     if (input_db_ == "")
         throw std::runtime_error("CFDMesh::init called on empty database file");
 
-    stkio_.add_mesh_database(input_db_, stk::io::READ_MESH);
+    stkio_.add_mesh_database(input_db_, db_purpose);
     stkio_.set_bulk_data(bulk_);
     stkio_.create_input_mesh();
     stkio_.add_all_mesh_fields_as_input_fields();
@@ -76,6 +76,7 @@ void CFDMesh::write_database
 {
     size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
     for (auto fname: output_fields_ ) {
+        std::cerr << fname << std::endl;
         stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
         if (fld != NULL) {
             stkio_.add_field(fh, *fld, fname);
