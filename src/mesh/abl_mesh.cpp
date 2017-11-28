@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     blockMesh.run();
 
     std::cout << "Writing mesh to file: " << output_db << std::endl;
-    bool set_64bit = true;
+    bool set_64bit = false;
     sierra::nalu::wind_utils::get_optional(node, "ioss_8bit_ints", set_64bit);
 
     if (set_64bit) mesh->set_64bit_flags();

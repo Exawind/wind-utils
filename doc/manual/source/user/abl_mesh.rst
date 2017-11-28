@@ -105,7 +105,7 @@ parameters.A sample input file is shown below
 .. confval:: ioss_8bit_ints
 
    Boolean flag that enables output of 8-bit ints when writing Exodus mesh.
-   Default value: true.
+   Default value: false.
 
 Boundary names
 ~~~~~~~~~~~~~~
