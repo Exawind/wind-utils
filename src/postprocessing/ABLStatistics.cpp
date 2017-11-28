@@ -42,7 +42,6 @@ ABLStatistics::ABLStatistics
     field_map_["velocity"] = "velocity";
     field_map_["temperature"] = "temperature";
     field_map_["sfs_stress"] = "sfs_stress";
-    field_map_["resolved_stress"] = "resolved_stress";
     field_map_["temperature_resolved_stress"] = "temperature_resolved_stress";
     field_map_["temperature_variance"] = "temperature_variance";
     load(node);
@@ -84,7 +83,6 @@ void ABLStatistics::load(const YAML::Node& node)
     velMean_.resize(nheights_ * ndim_);
     tempMean_.resize(nheights_);
     sfsMean_.resize(nheights_ * ndim_ * 2);
-    uiujMean_.resize(nheights_ * ndim_, 2);
 
     if (dowrite) {
         std::cerr << "ABLStatistics:: Will process data at " << nheights_ << " heights." << std::endl;
@@ -100,14 +98,11 @@ ABLStatistics::initialize()
         stk::topology::NODE_RANK, field_map_["temperature"]);
     stk::mesh::FieldBase* sfs_stress = &meta_.declare_field<stk::mesh::Field<double, stk::mesh::SimpleArrayTag>>(
         stk::topology::NODE_RANK, field_map_["sfs_stress"]);
-    stk::mesh::FieldBase* res_stress = &meta_.declare_field<stk::mesh::Field<double, stk::mesh::SimpleArrayTag>>(
-        stk::topology::NODE_RANK, field_map_["resolved_stress"]);
 
     for (auto* part: fluid_parts_) {
         stk::mesh::put_field(velocity, *part, ndim_);
         stk::mesh::put_field(temperature, *part, 1);
         stk::mesh::put_field(*sfs_stress, *part, ndim_*2);
-        stk::mesh::put_field(*res_stress, *part, ndim_*2);
     }
 }
 
@@ -150,8 +145,6 @@ ABLStatistics::average_planes()
         stk::topology::NODE_RANK, field_map_["temperature"]);
     const stk::mesh::FieldBase* sfs_stress = meta_.get_field(
         stk::topology::NODE_RANK, field_map_["sfs_stress"]);
-    const stk::mesh::FieldBase* res_stress = meta_.get_field(
-        stk::topology::NODE_RANK, field_map_["resolved_stress"]);
 
     // Initialize mean arrays to zero before we start accumulation
     for (int ih=0; ih < nheights_; ih++) {
@@ -159,11 +152,6 @@ ABLStatistics::average_planes()
 
         for (int d=0; d < ndim_; d++) {
             velMean_[ih * ndim_ + d] = 0.0;
-        }
-
-        for (int ij=0; ij < ndim_ * 2; ij++) {
-            sfsMean_[ih * ndim_ * 2 + ij] = 0.0;
-            uiujMean_[ih * ndim_ * 2 + ij] = 0.0;
         }
     }
 
@@ -187,29 +175,16 @@ ABLStatistics::average_planes()
             double* temp = stk::mesh::field_data(*temperature, node);
             tempMean_[ih] += *temp;
 
-            int offset = ih * ndim_ * 2;
-            int ix = 0;
-            double* sfs = static_cast<double*>(stk::mesh::field_data(*sfs_stress, node));
-            double* uiuj = static_cast<double*>(stk::mesh::field_data(*res_stress, node));
-            for (int i=0; i < ndim_; i++)
-                for (int j=i; j < ndim_; j++) {
-                    sfsMean_[offset + ix] = sfs[ix];
-                    uiujMean_[offset + ix] = uiuj[ix];
-                    ix++;
-                }
+            // TODO: Add SFS stress calculations here
         }
     }
 
     // Perform global sum and average
     std::vector<double> gVelMean(nheights_ * ndim_, 0.0);
     std::vector<double> gTempMean(nheights_, 0.0);
-    std::vector<double> gSfsMean(nheights_ * ndim_ * 2, 0.0);
-    std::vector<double> gUiUjMean(nheights_ * ndim_ * 2, 0.0);
     std::vector<int> gNodeCtr(nheights_, 0);
 
     stk::all_reduce_sum(bulk_.parallel(), velMean_.data(), gVelMean.data(), nheights_ * ndim_);
-    stk::all_reduce_sum(bulk_.parallel(), sfsMean_.data(), gSfsMean.data(), nheights_ * ndim_ * 2);
-    stk::all_reduce_sum(bulk_.parallel(), uiujMean_.data(), gUiUjMean.data(), nheights_ * ndim_ * 2);
     stk::all_reduce_sum(bulk_.parallel(), tempMean_.data(), gTempMean.data(), nheights_);
     stk::all_reduce_sum(bulk_.parallel(), node_counters_.data(), gNodeCtr.data(), nheights_);
 
@@ -219,12 +194,6 @@ ABLStatistics::average_planes()
 
         for (int d=0; d < ndim_; d++)  {
             velMean_[ih * ndim_ + d] = gVelMean[ih * ndim_ + d] / gNodeCtr[ih];
-        }
-
-        int offset = ih * ndim_ * 2;
-        for (int i=0; i < ndim_ * 2; i++) {
-            sfsMean_[offset + i] = gSfsMean[offset + i] / gNodeCtr[ih];
-            uiujMean_[offset + i] = gUiUjMean[offset + i] / gNodeCtr[ih];
         }
     }
 }
@@ -237,29 +206,13 @@ ABLStatistics::output_averages()
 
     std::ofstream velfile;
     std::ofstream tempfile;
-    std::ofstream sfsfile;
-    std::ofstream uiujfile;
 
     // TODO: Provide user defined output filenames
     velfile.open("abl_velocity_stats.dat", std::ofstream::out);
     tempfile.open("abl_temperature_stats.dat", std::ofstream::out);
-    sfsfile.open("abl_sfs_stress_stats.dat", std::ofstream::out);
-    uiujfile.open("abl_resolved_stress_stats.dat", std::ofstream::out);
 
     velfile << "# Height, Ux, Uy, Uz" << std::endl;
     tempfile << "# Height, T" << std::endl;
-
-    sfsfile << "# Height, ";
-    uiujfile << "# Height, ";
-    for (int i=0; i < ndim_; i++)
-        for (int j=i; j < ndim_; j++) {
-            sfsfile << "u" << std::to_string(i+1)
-                    << std::to_string(j+1) << ", ";
-            uiujfile << "u" << std::to_string(i+1)
-                    << std::to_string(j+1) << ", ";
-        }
-    sfsfile << std::endl;
-    uiujfile << std::endl;
 
     // TODO: Provide precision changes
     for (int ih=0; ih < nheights_; ih++) {
@@ -269,18 +222,9 @@ ABLStatistics::output_averages()
         for (int d=0; d < ndim_; d++)
             velfile << " " << velMean_[ih * ndim_ + d];
         velfile << std::endl;
-
-        for (int i=0; i < ndim_ * 2; i++) {
-            sfsfile << " " << sfsMean_[ih * ndim_ * 2 + i];
-            uiujfile << " " << uiujMean_[ih * ndim_ * 2 + i];
-        }
-        sfsfile << std::endl;
-        uiujfile << std::endl;
     }
     velfile.close();
     tempfile.close();
-    sfsfile.close();
-    uiujfile.close();
 
     std::cout << "ABLStatistics:: Finished writing statistics files" << std::endl;
 }

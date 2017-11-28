@@ -85,9 +85,6 @@ private:
     //! Spatially averaged mean SFS field as a function of height [nHeights, 6]
     std::vector<double> sfsMean_;
 
-    //! Spatially averaged filtered velocity field as a function of height [nHeights, 6]
-    std::vector<double> uiujMean_;
-
     //! Array of heights where averaged data is available
     std::vector<double> heights_;
 
