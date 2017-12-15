@@ -236,11 +236,15 @@ previous section.
    it requires the NetCDF-Fortran library support that is not part of the
    standard Nalu build dependency. Users wishing to enable this library must
    make sure that the NetCDF-Fortran library has been installed and configure
-   the :cmakeval:`NETCDF_F77_ROOT` appropriately.
+   the :cmakeval:`NETCDF_F77_ROOT` and :cmakeval:`NETCDF_DIR` appropriately.
 
 .. cmakeval:: NETCDF_F77_ROOT
 
    Absolute path to the location of the NETCDF Fortran 77 library.
+
+.. cmakeval:: NETCDF_DIR
+
+   Absolute path to the location of the NETCDF C library.
 
 .. cmakeval:: ENABLE_SPHINX_DOCS
 

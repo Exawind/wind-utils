@@ -17,9 +17,5 @@ add_subdirectory(postprocessing)
 add_subdirectory(mesh)
 
 if (ENABLE_WRFTONALU)
-  set (NETCDF_F77 "YES")
-  find_package (NetCDF REQUIRED)
-
-  include_directories(${NETCDF_INCLUDE_DIRS})
   add_subdirectory(wrftonalu)
 endif (ENABLE_WRFTONALU)
