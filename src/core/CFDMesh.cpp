@@ -76,7 +76,6 @@ void CFDMesh::write_database
 {
     size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
     for (auto fname: output_fields_ ) {
-        std::cerr << fname << std::endl;
         stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
         if (fld != NULL) {
             stkio_.add_field(fh, *fld, fname);
