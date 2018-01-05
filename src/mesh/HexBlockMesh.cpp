@@ -427,7 +427,7 @@ void HexBlockMesh::generate_x_boundary(
     unsigned sideOrd = 0;
     std::string ssname;
     int ix = 0;
-    get_side_set_info(id, ix, ssname, sideOrd);
+    get_sideset_info(id, ix, ssname, sideOrd);
     std::cout << "\tGenerating X Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
@@ -452,7 +452,7 @@ void HexBlockMesh::generate_y_boundary(
     unsigned sideOrd = 0;
     std::string ssname;
     int iy = 0;
-    get_side_set_info(id, iy, ssname, sideOrd);
+    get_sideset_info(id, iy, ssname, sideOrd);
     std::cout << "\tGenerating Y Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
@@ -476,7 +476,7 @@ void HexBlockMesh::generate_z_boundary(
     unsigned sideOrd = 0;
     std::string ssname;
     int iz = 0;
-    get_side_set_info(id, iz, ssname, sideOrd);
+    get_sideset_info(id, iz, ssname, sideOrd);
     std::cout << "\tGenerating Z Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
