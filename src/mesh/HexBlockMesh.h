@@ -40,6 +40,17 @@ public:
         VERTICES       ///< Provide vertices for the cuboidal domain
     };
 
+    /** Sideset definition type
+     */
+    enum SideIDType {
+        XMIN = 0,
+        YMIN,
+        ZMIN,
+        XMAX,
+        YMAX,
+        ZMAX
+    };
+
     /**
      * \param mesh A sierra::nalu::CFDMesh instance
      * \param node The YAML::Node containing inputs for this task
@@ -71,13 +82,16 @@ private:
     void generate_coordinates(const std::vector<stk::mesh::EntityId>&);
 
     //! Generate the xmin and xmax sidesets
-    void generate_x_boundary(const std::vector<stk::mesh::EntityId>&, const int);
+    void generate_x_boundary(const std::vector<stk::mesh::EntityId>&, const SideIDType);
 
     //! Generate the ymin and ymax sidesets
-    void generate_y_boundary(const std::vector<stk::mesh::EntityId>&, const int);
+    void generate_y_boundary(const std::vector<stk::mesh::EntityId>&, const SideIDType);
 
     //! Generate the zmin and zmax sidesets
-    void generate_z_boundary(const std::vector<stk::mesh::EntityId>&, const int);
+    void generate_z_boundary(const std::vector<stk::mesh::EntityId>&, const SideIDType);
+
+    //! Side set information helper
+    void get_side_set_info(const SideIDType id, int& index, std::string& name, unsigned& ord);
 
     //! STK Metadata object
     stk::mesh::MetaData& meta_;
