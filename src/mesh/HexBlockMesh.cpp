@@ -491,7 +491,7 @@ void HexBlockMesh::generate_z_boundary(
 }
 
 void
-HexBlockMesh::get_side_set_info(
+HexBlockMesh::get_sideset_info(
     const SideIDType id, int& index, std::string& name, unsigned& ord)
 {
     int mx = meshDims_[0];

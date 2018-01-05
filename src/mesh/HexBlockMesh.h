@@ -90,8 +90,13 @@ private:
     //! Generate the zmin and zmax sidesets
     void generate_z_boundary(const std::vector<stk::mesh::EntityId>&, const SideIDType);
 
-    //! Side set information helper
-    void get_side_set_info(const SideIDType id, int& index, std::string& name, unsigned& ord);
+    /** Sideset information helper
+     * \param[in] id Sideset min/max id
+     * \param[inout] index Sideset coordinate index
+     * \param[inout] name Sideset name
+     * \param[inout] ord Sideset number
+     */
+    void get_sideset_info(const SideIDType id, int& index, std::string& name, unsigned& ord);
 
     //! STK Metadata object
     stk::mesh::MetaData& meta_;
