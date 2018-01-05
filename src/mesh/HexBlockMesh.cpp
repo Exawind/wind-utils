@@ -337,12 +337,12 @@ void HexBlockMesh::generate_elements()
 
     bulk_.modification_begin("Adding sidesets");
     {
-        generate_x_boundary(elemIDs, 0);
-        generate_x_boundary(elemIDs, mx-1);
-        generate_y_boundary(elemIDs, 0);
-        generate_y_boundary(elemIDs, my-1);
-        generate_z_boundary(elemIDs, 0);
-        generate_z_boundary(elemIDs, mz-1);
+        generate_x_boundary(elemIDs, XMIN);
+        generate_x_boundary(elemIDs, XMAX);
+        generate_y_boundary(elemIDs, YMIN);
+        generate_y_boundary(elemIDs, YMAX);
+        generate_z_boundary(elemIDs, ZMIN);
+        generate_z_boundary(elemIDs, ZMAX);
     }
     bulk_.modification_end();
 
@@ -418,14 +418,16 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
 
 void HexBlockMesh::generate_x_boundary(
     const std::vector<stk::mesh::EntityId>& elemVec,
-    const int ix)
+    const SideIDType id)
 {
     int mx = meshDims_[0];
     int my = meshDims_[1];
     int mz = meshDims_[2];
 
-    unsigned sideOrd = (ix == 0)? 3 : 1;
-    std::string ssname = (ix==0)? ss_xmin_name_ : ss_xmax_name_;
+    unsigned sideOrd = 0;
+    std::string ssname;
+    int ix = 0;
+    get_side_set_info(id, ix, ssname, sideOrd);
     std::cout << "\tGenerating X Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
@@ -441,14 +443,16 @@ void HexBlockMesh::generate_x_boundary(
 
 void HexBlockMesh::generate_y_boundary(
     const std::vector<stk::mesh::EntityId>& elemVec,
-    const int iy)
+    const SideIDType id)
 {
     int mx = meshDims_[0];
     int my = meshDims_[1];
     int mz = meshDims_[2];
 
-    unsigned sideOrd = (iy == 0)? 0 : 2;
-    std::string ssname = (iy==0)? ss_ymin_name_ : ss_ymax_name_;
+    unsigned sideOrd = 0;
+    std::string ssname;
+    int iy = 0;
+    get_side_set_info(id, iy, ssname, sideOrd);
     std::cout << "\tGenerating Y Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
@@ -464,13 +468,15 @@ void HexBlockMesh::generate_y_boundary(
 
 void HexBlockMesh::generate_z_boundary(
     const std::vector<stk::mesh::EntityId>& elemVec,
-    const int iz)
+    const SideIDType id)
 {
     int mx = meshDims_[0];
     int my = meshDims_[1];
 
-    unsigned sideOrd = (iz == 0)? 4 : 5;
-    std::string ssname = (iz==0)? ss_zmin_name_ : ss_zmax_name_;
+    unsigned sideOrd = 0;
+    std::string ssname;
+    int iz = 0;
+    get_side_set_info(id, iz, ssname, sideOrd);
     std::cout << "\tGenerating Z Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
@@ -481,6 +487,51 @@ void HexBlockMesh::generate_z_boundary(
             auto elem = bulk_.get_entity(stk::topology::ELEM_RANK, elemVec[idx]);
             bulk_.declare_element_side(elem, sideOrd, partVec);
         }
+    }
+}
+
+void
+HexBlockMesh::get_sideset_info(
+    const SideIDType id, int& index, std::string& name, unsigned& ord)
+{
+    int mx = meshDims_[0];
+    int my = meshDims_[1];
+    int mz = meshDims_[2];
+
+    switch (id) {
+    case XMIN:
+        ord = 3;
+        name = ss_xmin_name_;
+        index = 0;
+        break;
+    case XMAX:
+        ord = 1;
+        name = ss_xmax_name_;
+        index = mx - 1;
+        break;
+    case YMIN:
+        ord = 0;
+        name = ss_ymin_name_;
+        index = 0;
+        break;
+    case YMAX:
+        ord = 2;
+        name = ss_ymax_name_;
+        index = my - 1;
+        break;
+    case ZMIN:
+        ord = 4;
+        name = ss_zmin_name_;
+        index = 0;
+        break;
+    case ZMAX:
+        ord = 5;
+        name = ss_zmax_name_;
+        index = mz - 1;
+        break;
+    default:
+        throw std::runtime_error(
+            "Boundary id does not match min/max id value.");
     }
 }
 
