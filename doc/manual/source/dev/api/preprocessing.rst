@@ -36,6 +36,19 @@ SamplingPlanes
    :members:
    :private-members:
 
+NestedRefinement
+--------------
+
+.. doxygenclass:: sierra::nalu::NestedRefinement
+   :members:
+   :private-members:
+
+ChannelFields
+-------------
+
+.. doxygenclass:: sierra::nalu::ChannelFields
+   :members:
+
 RotateMesh
 ----------
 
