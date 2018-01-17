@@ -7,6 +7,7 @@ add_executable(nalu_preprocess
   ChannelFields.cpp
   RotateMesh.cpp
   BdyIOPlanes.cpp
+  NestedRefinement.cpp
 
   PreProcessDriver.cpp
   nalu_preprocess.cpp

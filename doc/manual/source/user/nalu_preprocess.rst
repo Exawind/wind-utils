@@ -8,15 +8,16 @@ This utility loads an input mesh and performs various pre-processing *tasks* so
 that the resulting output database can be used in a wind LES simulation.
 Currently, the following *tasks* have been implemented within this utility.
 
-=======================  ===========================================================
-Task type                Description
-=======================  ===========================================================
-``init_abl_fields``      Initialize ABL velocity and temperature fields
-``init_channel_fields``  Initialize channel velocity fields
-``generate_planes``      Generate horizontal sampling planes for ``dp/dx`` forcing
-``create_bdy_io_mesh``   Create an I/O transfer mesh for sampling inflow planes
-``rotate_mesh``          Rotate mesh
-=======================  ===========================================================
+=========================  ===========================================================
+Task type                  Description
+=========================  ===========================================================
+``init_abl_fields``        Initialize ABL velocity and temperature fields
+``init_channel_fields``    Initialize channel velocity fields
+``generate_planes``        Generate horizontal sampling planes for ``dp/dx`` forcing
+``create_bdy_io_mesh``     Create an I/O transfer mesh for sampling inflow planes
+``mesh_local_refinement``  Local refinement around turbines for wind farm simulations
+``rotate_mesh``            Rotate mesh
+=========================  ===========================================================
 
 .. warning::
 
@@ -170,6 +171,86 @@ and writes it out to the :confval:`output_db`. It is safe to run
    an entry in the input file. This can be used to speed up the execution
    process if the user intends to initialize uniform velocity throughout the
    domain within Nalu.
+
+``mesh_local_refinement``
+-------------------------
+
+This task creates an *error indicator field* that can be used to locally refine
+the mesh using Percept. This is used to refine the wind farm simulation mesh
+around the turbines to capture the wakes with the desired resolution while
+performing the ABL simulations with a coarser mesh resolution.
+
+.. code-block:: yaml
+
+   mesh_local_refinement:
+     fluid_parts: [fluid_part]
+     write_percept_files: true
+     percept_file_prefix: adapt
+     search_tolerance: 11.0
+
+     turbine_diameters: [ 15.0, 15.0 ]
+     turbine_heights: [ 50.0, 50.0 ]
+     turbine_locations:
+       - [ 200.0, 200.0, 0.0 ]
+       - [ 230.0, 300.0, 0.0 ]
+     orientation:
+       type: wind_direction
+       wind_direction: 225.0
+     refinement_levels:
+       - [ 7.0, 12.0, 7.0 ]
+       - [ 5.0, 10.0, 5.0 ]
+       - [ 3.0, 6.0, 3.0]
+       - [ 1.5, 3.0, 1.2]
+
+.. confval:: turbine_diameters
+
+   A list of turbine diameters for the turbines in the wind farm.
+
+.. confval:: turbine_heights
+
+   The list of tower heights for the turbines in the wind farm.
+
+.. confval:: turbine_locations
+
+   The ``(x, y, z)`` coordinates of the turbine base in the wind farm.
+
+.. confval:: orientation
+
+   The orientation of the refinement boxes. Currently there is only one option
+   available indicated by ``type`` parameter: ``wind_direction``. For this
+   option, it expects the ``wind_direction`` variable to contain the compass
+   direction in degrees.
+
+.. confval:: refinement_levels
+
+   A list of 3 parameters for each nested refinement zone. The three parameters
+   are the distance upstream, distance downstream and the lateral distance.
+   These parameters are non-dimensional and are internally scaled by the turbine
+   diameters by the utility. The nested boxes must be specified with the largest
+   box first and the subsequent sizes in descending order.
+
+.. confval:: search_tolerance
+
+   The tolerance parameter added when searching for elements enclosed by the
+   refinement box. A value slightly larger than the coarsest mesh size is
+   recommended.
+
+.. confval:: refine_field_name
+
+   The name of the ``error_indicator_field`` used when creating STK fields.
+   Default is ``turbine_refinement_field``.
+
+.. confval:: write_percept_files
+
+   Boolean flag indicating whether input files for use with Percept is written
+   out by this utility as part of the run. Default: ``true``.
+
+.. confval:: percept_file_prefix
+
+   The prefix used for the Percept input file name. The default value is
+   ``adapt``. With the default file name and three levels of refinement, it will
+   create three input files: ``adapt1.yaml``, ``adapt2.yaml``, and
+   ``adapt3.yaml``.
 
 ``init_channel_fields``
 -----------------------
