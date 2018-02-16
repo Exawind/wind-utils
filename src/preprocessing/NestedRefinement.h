@@ -17,7 +17,6 @@
 #define NESTEDREFINEMENT_H
 
 #include "PreProcessingTask.h"
-#include "core/MeshSearch.h"
 
 #include <vector>
 #include <array>
