@@ -16,6 +16,9 @@
 
 #include "ABLFields.h"
 #include "core/LinearInterpolation.h"
+#include "core/YamlUtils.h"
+
+#include <random>
 
 namespace sierra {
 namespace nalu {
@@ -29,6 +32,7 @@ ABLFields::ABLFields(
     meta_(mesh.meta()),
     bulk_(mesh.bulk()),
     fluid_parts_(0),
+    periodicParts_(0),
     ndim_(meta_.spatial_dimension()),
     doVelocity_(false),
     doTemperature_(false)
@@ -120,12 +124,43 @@ void ABLFields::load_velocity_info(const YAML::Node& abl)
         for (int j=0; j<ndim_; j++) {
             velocity_[j][i] = velInputs[i][j];
         }
+
+    if (abl["perturbations"]) {
+        perturbU_ = true;
+        auto& pnode = abl["perturbations"];
+        zRefHeight_ = pnode["reference_height"].as<double>();
+        std::vector<double> amplitude(2, 0.0);
+        amplitude = pnode["amplitude"].as<std::vector<double>>();
+        if (amplitude.size() != 2)
+            throw std::runtime_error("ABLFields: Invalid size for velocity perturbation amplitude array.");
+        deltaU_ = amplitude[0];
+        deltaV_ = amplitude[1];
+        std::vector<double> periods(2, 0.0);
+        periods = pnode["periods"].as<std::vector<double>>();
+        if (periods.size() != 2)
+            throw std::runtime_error("ABLFields: Invalid size for velocity perturbation periods array.");
+        Uperiods_ = periods[0];
+        Vperiods_ = periods[1];
+    }
 }
 
 void ABLFields::load_temperature_info(const YAML::Node& abl)
 {
     THeights_ = abl["heights"].as<std::vector<double>>();
     TValues_ = abl["values"].as<std::vector<double>>();
+
+    if (abl["perturbations"]) {
+        perturbT_ = true;
+        auto& pnode = abl["perturbations"];
+        thetaCutoffHt_ = pnode["cutoff_height"].as<double>();
+        thetaAmplitude_ = pnode["amplitude"].as<double>();
+
+        if (pnode["skip_periodic_parts"])
+            periodicParts_ = pnode["skip_periodic_parts"].as<std::vector<std::string>>();
+
+        wind_utils::get_optional(pnode, "random_gauss_mean", thetaGaussMean_);
+        wind_utils::get_optional(pnode, "random_gauss_var", thetaGaussVar_);
+    }
 
     ThrowAssertMsg(
         (THeights_.size() == TValues_.size()),
@@ -158,11 +193,65 @@ void ABLFields::init_velocity_field()
             }
         }
     }
+
+    if (perturbU_) perturb_velocity_field();
+}
+
+void ABLFields::perturb_velocity_field()
+{
+    /** The velocity perturbations are similar to the streaks that are added to
+     * the velocity field in NREL's SOWFA solution.
+     *
+     */
+    // TODO: Handle height as a distance from terrain
+
+    const double pi = std::acos(-1.0);
+    stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
+    const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
+        stk::topology::NODE_RANK, fluid_union);
+
+    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+        stk::topology::NODE_RANK, "coordinates");
+    VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
+        stk::topology::NODE_RANK, "velocity");
+
+    auto bbox = mesh_.calc_bounding_box(fluid_union, false);
+    const double xMin = bbox.get_x_min();
+    const double xMax = bbox.get_x_max();
+    const double yMin = bbox.get_y_min();
+    const double yMax = bbox.get_y_max();
+    const double zMax = bbox.get_z_max();
+
+    const double aval = (Uperiods_ * 2.0 * pi / (yMax - yMin));
+    const double bval = (Vperiods_ * 2.0 * pi / (xMax - xMin));
+    const double ufac = deltaU_ * std::exp(0.5) / zRefHeight_;
+    const double vfac = deltaV_ * std::exp(0.5) / zRefHeight_;
+
+    for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
+        stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
+        double* xyz = stk::mesh::field_data(*coords, fbkt);
+        double* vel = stk::mesh::field_data(*velocity, fbkt);
+
+        for (size_t in=0; in < fbkt.size(); in++) {
+            const size_t offset = in * ndim_;
+            const double zh = xyz[offset + 2];
+
+            const double xl = xyz[offset] - xMin;
+            const double yl = xyz[offset + 1] - yMin;
+            const double zl = (zh / zRefHeight_);
+            const double damp = std::exp(-0.5 * zl * zl);
+
+            // U perturbations
+            vel[offset] += ufac * damp * zh * std::cos(aval * yl);
+            // V perturbations
+            vel[offset + 1] += vfac * damp * zh * std::sin(bval * xl);
+            // No perturbations for w component
+        }
+    }
 }
 
 void ABLFields::init_temperature_field()
 {
-    std::cerr << "Temperature" << std::endl;
     stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
@@ -171,6 +260,7 @@ void ABLFields::init_temperature_field()
         stk::topology::NODE_RANK, "coordinates");
     ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
         stk::topology::NODE_RANK, "temperature");
+
 
     for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
         stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
@@ -182,8 +272,57 @@ void ABLFields::init_temperature_field()
             utils::linear_interp(THeights_, TValues_, zh, temp[in]);
         }
     }
+
+    if (perturbT_) perturb_temperature_field();
 }
 
+void ABLFields::perturb_temperature_field()
+{
+    /** Perturbations for the temperature field is based on the following paper:
+     *
+     *  D. Munoz-Esparza, B. Kosovic, J. van Beeck, J. D. Mirocha, A stocastic
+     *  perturbation method to generate inflow turbulence in large-eddy
+     *  simulation models: Application to neutrally stratified atmospheric
+     *  boundary layers. Physics of Fluids, Vol. 27, 2015.
+     *
+     */
+
+    stk::mesh::PartVector partVec(0);
+    for (size_t i=0; i < periodicParts_.size(); i++) {
+        auto* part = meta_.get_part(periodicParts_[i]);
+        if (part != nullptr)
+            partVec.push_back(part);
+    }
+
+    stk::mesh::Selector fluid_union = (
+        stk::mesh::selectUnion(fluid_parts_)
+        & !stk::mesh::selectUnion(partVec));
+    const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
+        stk::topology::NODE_RANK, fluid_union);
+
+    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+        stk::topology::NODE_RANK, "coordinates");
+    ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
+        stk::topology::NODE_RANK, "temperature");
+
+    // Random number generator for adding temperature perturbations
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::normal_distribution<double> gaussNormal{thetaGaussMean_, thetaGaussVar_};
+
+    for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
+        stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
+        double* xyz = stk::mesh::field_data(*coords, fbkt);
+        double* temp = stk::mesh::field_data(*temperature, fbkt);
+
+        for (size_t in=0; in < fbkt.size(); in++) {
+            const double zh = xyz[in*ndim_ + 2];
+
+            if (zh < thetaCutoffHt_)
+                temp[in] += thetaAmplitude_ * gaussNormal(gen);
+        }
+    }
+}
 
 } // nalu
 } // sierra

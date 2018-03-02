@@ -94,6 +94,12 @@ private:
     //! Intialize the temperature field through linear interpolation
     void init_temperature_field();
 
+    //! Add perturbations to velocity field
+    void perturb_velocity_field();
+
+    //! Add perturbations to temperature field
+    void perturb_temperature_field();
+
     //! STK Metadata object
     stk::mesh::MetaData& meta_;
 
@@ -115,6 +121,36 @@ private:
     //! List of temperatures (K) at user-defined heights (THeights_)
     std::vector<double> TValues_;
 
+    //! List of periodic parts
+    std::vector<std::string> periodicParts_;
+
+    //! Velocity perturbation amplitude for Ux
+    double deltaU_{1.0};
+
+    //! Velocity perturbation amplitude for Uy
+    double deltaV_{1.0};
+
+    //! Number of periods for Ux
+    double Uperiods_{4.0};
+
+    //! Number of periods for Uy
+    double Vperiods_{4.0};
+
+    //! Reference height for velocity perturbations
+    double zRefHeight_{50.0};
+
+    //! Amplitude of temperature perturbations
+    double thetaAmplitude_;
+
+    //! Mean for the Gaussian random number generator
+    double thetaGaussMean_{0.0};
+
+    //! Variance of the Gaussian random number generator
+    double thetaGaussVar_{1.0};
+
+    //! Cutoff height for temperature fluctuations
+    double thetaCutoffHt_;
+
     //! Dimensionality of the mesh
     int ndim_;
 
@@ -123,6 +159,12 @@ private:
 
     //! Flag indicating whether temperature is initialized
     bool doTemperature_;
+
+    //! Flag indicating whether velocity perturbations are added during initialization
+    bool perturbU_{false};
+
+    //! Flag indicating whether temperature perturbations are added
+    bool perturbT_{false};
 };
 
 }
