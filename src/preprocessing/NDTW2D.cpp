@@ -18,7 +18,7 @@
 namespace sierra {
 namespace nalu {
 
-REGISTER_DERIVED_CLASS(PreProcessingTask, NDTW2D, "calc_ndtw2d");
+REGISTER_DERIVED_CLASS(PreProcessingTask, NDTW2D, "calc_ndtw2d_deprecated");
 
 NDTW2D::NDTW2D(
     CFDMesh& mesh,
@@ -34,6 +34,8 @@ NDTW2D::NDTW2D(
     // This is a temporary utility that is not scalable
     if (bulk_.parallel_size() > 1)
         throw std::runtime_error("NDTW2D is not a parallel utility");
+
+    std::cerr << "!!!WARNING!!! NDTW2D is a deprecated utility." << std::endl;
     load(node);
 }
 

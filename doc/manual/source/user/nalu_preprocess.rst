@@ -425,27 +425,3 @@ Rotates the mesh given angle, origin, and axis using quaternion rotations.
      angle: 30.0
      origin: [500.0, 0.0, 0.0]
      axis: [0.0, 0.0, 1.0]
-
-
-``calc_ndtw2d``
----------------
-
-.. deprecated:: 0.1.0
-
-   The implementation uses a brute-force method to compute the nearest wall
-   distance and as such is unsitable for production use. Use only on small
-   two-dimensional meshes.
-
-Calculate the nearest distance to wall (NDTW) for 2-D airfoil meshes.
-
-
-.. code-block:: yaml
-   :linenos:
-
-   calc_ndtw2d:
-     fluid_parts:
-       - Unspecified-2-QUAD
-       - Unspecified-3-QUAD
-
-     wall_parts:
-       - airfoil
