@@ -23,6 +23,7 @@
  */
 
 #include "preprocessing/PreProcessDriver.h"
+#include "core/KokkosWrappers.h"
 
 #include "stk_util/parallel/Parallel.hpp"
 
@@ -35,6 +36,7 @@
 int main(int argc, char** argv)
 {
     stk::ParallelMachine comm = stk::parallel_machine_init(&argc, &argv);
+    Kokkos::initialize(argc, argv);
 
     std::string inpfile;
     boost::program_options::options_description desc(
@@ -69,8 +71,13 @@ int main(int argc, char** argv)
         std::cout << "\nNalu Preprocessing Utility" << "\n"
                   << "Input file: " << inpfile << std::endl;
     }
-    sierra::nalu::PreProcessDriver preprocess(comm, inpfile);
-    preprocess.run();
+    Kokkos::DefaultExecutionSpace::print_configuration(std::cout);
+    {
+        sierra::nalu::PreProcessDriver preprocess(comm, inpfile);
+        preprocess.run();
+    }
+
+    Kokkos::finalize_all();
 
     stk::parallel_machine_finalize();
     return 0;

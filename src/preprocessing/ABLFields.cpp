@@ -17,6 +17,7 @@
 #include "ABLFields.h"
 #include "core/LinearInterpolation.h"
 #include "core/YamlUtils.h"
+#include "core/KokkosWrappers.h"
 
 #include <random>
 
@@ -179,20 +180,24 @@ void ABLFields::init_velocity_field()
     VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "velocity");
 
-    for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
-        stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
-        double* xyz = stk::mesh::field_data(*coords, fbkt);
-        double* vel = stk::mesh::field_data(*velocity, fbkt);
+    Kokkos::parallel_for(
+        TeamPolicyType(fluid_bkts.size(), Kokkos::AUTO),
+        [&](const TeamMemberType &team) {
+            stk::mesh::Bucket &fbkt = *fluid_bkts[team.league_rank()];
+            double *xyz = stk::mesh::field_data(*coords, fbkt);
+            double *vel = stk::mesh::field_data(*velocity, fbkt);
 
-        for (size_t in=0; in < fbkt.size(); in++) {
-            const double zh = xyz[in*ndim_ + 2];
+            Kokkos::parallel_for(
+                Kokkos::TeamThreadRange(team, fbkt.size()),
+                [&](const size_t& in) {
+                    const double zh = xyz[in * ndim_ + 2];
 
-            for (int j=0; j<ndim_; j++) {
-                utils::linear_interp(
-                    vHeights_, velocity_[j], zh, vel[in * ndim_ + j]);
-            }
-        }
-    }
+                    for (int j = 0; j < ndim_; j++) {
+                        utils::linear_interp(vHeights_, velocity_[j], zh,
+                                             vel[in * ndim_ + j]);
+                    }
+                });
+        });
 
     if (perturbU_) perturb_velocity_field();
 }
@@ -227,27 +232,31 @@ void ABLFields::perturb_velocity_field()
     const double ufac = deltaU_ * std::exp(0.5) / zRefHeight_;
     const double vfac = deltaV_ * std::exp(0.5) / zRefHeight_;
 
-    for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
-        stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
-        double* xyz = stk::mesh::field_data(*coords, fbkt);
-        double* vel = stk::mesh::field_data(*velocity, fbkt);
+    Kokkos::parallel_for(
+        TeamPolicyType(fluid_bkts.size(), Kokkos::AUTO),
+        [&](const TeamMemberType &team) {
+            stk::mesh::Bucket& fbkt = *fluid_bkts[team.league_rank()];
+            double* xyz = stk::mesh::field_data(*coords, fbkt);
+            double* vel = stk::mesh::field_data(*velocity, fbkt);
 
-        for (size_t in=0; in < fbkt.size(); in++) {
-            const size_t offset = in * ndim_;
-            const double zh = xyz[offset + 2];
+            Kokkos::parallel_for(
+                Kokkos::TeamThreadRange(team, fbkt.size()),
+                [&](const size_t& in) {
+                    const size_t offset = in * ndim_;
+                    const double zh = xyz[offset + 2];
 
-            const double xl = xyz[offset] - xMin;
-            const double yl = xyz[offset + 1] - yMin;
-            const double zl = (zh / zRefHeight_);
-            const double damp = std::exp(-0.5 * zl * zl);
+                    const double xl = xyz[offset] - xMin;
+                    const double yl = xyz[offset + 1] - yMin;
+                    const double zl = (zh / zRefHeight_);
+                    const double damp = std::exp(-0.5 * zl * zl);
 
-            // U perturbations
-            vel[offset] += ufac * damp * zh * std::cos(aval * yl);
-            // V perturbations
-            vel[offset + 1] += vfac * damp * zh * std::sin(bval * xl);
-            // No perturbations for w component
-        }
-    }
+                    // U perturbations
+                    vel[offset] += ufac * damp * zh * std::cos(aval * yl);
+                    // V perturbations
+                    vel[offset + 1] += vfac * damp * zh * std::sin(bval * xl);
+                    // No perturbations for w component
+                });
+        });
 }
 
 void ABLFields::init_temperature_field()
@@ -261,17 +270,21 @@ void ABLFields::init_temperature_field()
     ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
         stk::topology::NODE_RANK, "temperature");
 
+    Kokkos::parallel_for(
+        TeamPolicyType(fluid_bkts.size(), Kokkos::AUTO),
+        [&](const TeamMemberType &team) {
+            stk::mesh::Bucket& fbkt = *fluid_bkts[team.league_rank()];
+            double* xyz = stk::mesh::field_data(*coords, fbkt);
+            double* temp = stk::mesh::field_data(*temperature, fbkt);
 
-    for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
-        stk::mesh::Bucket& fbkt = *fluid_bkts[ib];
-        double* xyz = stk::mesh::field_data(*coords, fbkt);
-        double* temp = stk::mesh::field_data(*temperature, fbkt);
+            Kokkos::parallel_for(
+                Kokkos::TeamThreadRange(team, fbkt.size()),
+                [&](const size_t& in) {
 
-        for (size_t in=0; in < fbkt.size(); in++) {
-            const double zh = xyz[in*ndim_ + 2];
-            utils::linear_interp(THeights_, TValues_, zh, temp[in]);
-        }
-    }
+                    const double zh = xyz[in*ndim_ + 2];
+                    utils::linear_interp(THeights_, TValues_, zh, temp[in]);
+                });
+        });
 
     if (perturbT_) perturb_temperature_field();
 }
