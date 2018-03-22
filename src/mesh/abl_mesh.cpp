@@ -20,6 +20,7 @@
 
 #include "mesh/HexBlockMesh.h"
 #include "core/YamlUtils.h"
+#include "core/PerfUtils.h"
 
 #include "stk_util/parallel/Parallel.hpp"
 #include "stk_io/WriteMesh.hpp"
@@ -91,6 +92,13 @@ int main(int argc, char** argv)
     stkio.set_bulk_data(mesh->bulk());
     mesh->write_database(output_db);
 
+    sierra::nalu::summarize_memory_usage(comm, std::cout);
+    bool print_timing_stats = false;
+    sierra::nalu::wind_utils::get_optional(node, "print_timing_stats", print_timing_stats);
+    if (print_timing_stats) {
+        Teuchos::TimeMonitor::summarize(
+            std::cout, false, true, false, Teuchos::Union);
+    }
     stk::parallel_machine_finalize();
     return 0;
 }

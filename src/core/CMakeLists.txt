@@ -1,5 +1,6 @@
 
 add_library(utilscore
+  PerfUtils.cpp
   CFDMesh.cpp)
 target_link_libraries(utilscore
   ${Trilinos_TPL_LIBRARIES}

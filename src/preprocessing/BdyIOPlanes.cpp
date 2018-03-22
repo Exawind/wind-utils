@@ -14,6 +14,7 @@
 //
 
 #include "BdyIOPlanes.h"
+#include "core/PerfUtils.h"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Bucket.hpp"
 
@@ -54,6 +55,8 @@ void BdyIOPlanes::load(const YAML::Node& node)
 
 void BdyIOPlanes::initialize()
 {
+    const std::string timerName = "BdyIOPlanes::initialize";
+    auto timeMon = get_stopwatch(timerName);
     auto& fmeta = mesh_.meta();
     auto& iometa = iomesh_.meta();
 
@@ -77,6 +80,8 @@ void BdyIOPlanes::initialize()
 
 void BdyIOPlanes::create_boundary(const std::string bdyName)
 {
+    const std::string timerName = "BdyIOPlanes::create_boundary";
+    auto timeMon = get_stopwatch(timerName);
     auto& fmeta = mesh_.meta();
     auto& fbulk = mesh_.bulk();
     auto& iometa = iomesh_.meta();
@@ -103,44 +108,52 @@ void BdyIOPlanes::create_boundary(const std::string bdyName)
 
     iobulk.modification_begin();
     {
-        iobulk.generate_new_ids(stk::topology::NODE_RANK, num_nodes, newIDs);
+        {
+            const std::string timerName = "BdyIOPlanes::create_nodes";
+            auto timeMon = get_stopwatch(timerName);
+            iobulk.generate_new_ids(stk::topology::NODE_RANK, num_nodes, newIDs);
 
-        size_t nodeIdx=0;
-        for (auto b: bkts) {
-            for (size_t in=0; in<b->size(); in++) {
-                auto fnode = (*b)[in];
-                auto fnodeid = fbulk.identifier(fnode);
-                auto ionodeid = newIDs[nodeIdx++];
-                auto node = iobulk.declare_entity(stk::topology::NODE_RANK, ionodeid, *iopart);
-                nodeMap[fnodeid] = ionodeid;
+            size_t nodeIdx=0;
+            for (auto b: bkts) {
+                for (size_t in=0; in<b->size(); in++) {
+                    auto fnode = (*b)[in];
+                    auto fnodeid = fbulk.identifier(fnode);
+                    auto ionodeid = newIDs[nodeIdx++];
+                    auto node = iobulk.declare_entity(stk::topology::NODE_RANK, ionodeid, *iopart);
+                    nodeMap[fnodeid] = ionodeid;
 
-                // TODO: `in_shared` is marked for deprecation. Determine from
-                // STK team what the proposed alternative is.
-                if (fbulk.in_shared(fbulk.entity_key(fnode)))
-                    iobulk.add_node_sharing(node, iproc);
+                    // TODO: `in_shared` is marked for deprecation. Determine from
+                    // STK team what the proposed alternative is.
+                    if (fbulk.in_shared(fbulk.entity_key(fnode)))
+                        iobulk.add_node_sharing(node, iproc);
+                }
             }
         }
 
-        const auto& facebkts = fbulk.get_buckets(
-            fmeta.side_rank(), (fbdySel & fmeta.locally_owned_part()));
+        {
+            const std::string timerName = "BdyIOPlanes::create_elements";
+            auto timeMon = get_stopwatch(timerName);
+            const auto& facebkts = fbulk.get_buckets(
+                fmeta.side_rank(), (fbdySel & fmeta.locally_owned_part()));
 
-        size_t num_elems = 0;
-        for (auto b: facebkts) num_elems += b->size();
-        std::vector<stk::mesh::EntityId> elemIDs(num_elems);
+            size_t num_elems = 0;
+            for (auto b: facebkts) num_elems += b->size();
+            std::vector<stk::mesh::EntityId> elemIDs(num_elems);
 
-        iobulk.generate_new_ids(stk::topology::ELEM_RANK, num_elems, elemIDs);
+            iobulk.generate_new_ids(stk::topology::ELEM_RANK, num_elems, elemIDs);
 
-        size_t eidx=0;
-        stk::mesh::EntityIdVector nids(4);
-        for (auto b: facebkts) {
-            assert(b->topology() == stk::topology::QUAD_4);
-            for (size_t k=0; k<b->size(); k++) {
-                const stk::mesh::Entity* fnrels = b->begin_nodes(k);
+            size_t eidx=0;
+            stk::mesh::EntityIdVector nids(4);
+            for (auto b: facebkts) {
+                assert(b->topology() == stk::topology::QUAD_4);
+                for (size_t k=0; k<b->size(); k++) {
+                    const stk::mesh::Entity* fnrels = b->begin_nodes(k);
 
-                for (int in=0; in < 4; in++)
-                    nids[in] = nodeMap[fbulk.identifier(fnrels[in])];
+                    for (int in=0; in < 4; in++)
+                        nids[in] = nodeMap[fbulk.identifier(fnrels[in])];
 
-                stk::mesh::declare_element(iobulk, *iopart, elemIDs[eidx++], nids);
+                    stk::mesh::declare_element(iobulk, *iopart, elemIDs[eidx++], nids);
+                }
             }
         }
     }
@@ -152,17 +165,21 @@ void BdyIOPlanes::create_boundary(const std::string bdyName)
     VectorFieldType* iocoords = iometa.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    size_t idx=0;
-    for (auto b: bkts) {
-        for (size_t i=0; i < b->size(); i++) {
-            auto fnode = (*b)[i];
-            auto ionode = iobulk.get_entity(stk::topology::NODE_RANK, newIDs[idx++]);
+    {
+        const std::string timerName = "BdyIOPlanes::update_coordinates";
+        auto timeMon = get_stopwatch(timerName);
+        size_t idx=0;
+        for (auto b: bkts) {
+            for (size_t i=0; i < b->size(); i++) {
+                auto fnode = (*b)[i];
+                auto ionode = iobulk.get_entity(stk::topology::NODE_RANK, newIDs[idx++]);
 
-            double* fpt = stk::mesh::field_data(*fcoords, fnode);
-            double* iopt = stk::mesh::field_data(*iocoords, ionode);
+                double* fpt = stk::mesh::field_data(*fcoords, fnode);
+                double* iopt = stk::mesh::field_data(*iocoords, ionode);
 
-            for (int j=0; j<3; j++) {
-                iopt[j] = fpt[j];
+                for (int j=0; j<3; j++) {
+                    iopt[j] = fpt[j];
+                }
             }
         }
     }
@@ -174,6 +191,8 @@ void BdyIOPlanes::create_boundary(const std::string bdyName)
 
 void BdyIOPlanes::run()
 {
+    const std::string timerName = "BdyIOPlanes::run";
+    auto timeMon = get_stopwatch(timerName);
     bool doPrint = (mesh_.bulk().parallel_rank() == 0);
     iomesh_.meta().commit();
 

@@ -14,6 +14,7 @@
 //
 
 #include "CFDMesh.h"
+#include "PerfUtils.h"
 
 #include <stk_mesh/base/FEMHelpers.hpp>
 #include <stk_io/IossBridge.hpp>
@@ -53,6 +54,8 @@ void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
     if (input_db_ == "")
         throw std::runtime_error("CFDMesh::init called on empty database file");
 
+    const std::string timerName("CFDMesh::init_metadata");
+    auto timeMon = get_stopwatch(timerName);
     stkio_.add_mesh_database(input_db_, db_purpose);
     stkio_.set_bulk_data(bulk_);
     stkio_.create_input_mesh();
@@ -74,6 +77,8 @@ void CFDMesh::write_database
     double time
 )
 {
+    const std::string timerName("CFDMesh::write_database");
+    auto timeMon = get_stopwatch(timerName);
     size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
     for (auto fname: output_fields_ ) {
         stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
@@ -105,6 +110,9 @@ void CFDMesh::write_database_with_fields(std::string output_db)
 
 BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verbose)
 {
+    const std::string timerName("CFDMesh::calc_bounding_box");
+    auto timeMon = get_stopwatch(timerName);
+
     auto ndim = meta_.spatial_dimension();
     std::vector<double> bBoxMin(3, std::numeric_limits<double>::max());
     std::vector<double> bBoxMax(3, std::numeric_limits<double>::lowest());

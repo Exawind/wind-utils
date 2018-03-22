@@ -70,6 +70,8 @@ private:
 
     //! Transfer fields if necessary
     bool transfer_fields_{false};
+
+    bool print_timing_stats_{false};
 };
 
 } // nalu

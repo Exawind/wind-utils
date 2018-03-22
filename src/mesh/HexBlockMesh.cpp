@@ -15,6 +15,7 @@
 
 #include "HexBlockMesh.h"
 #include "core/YamlUtils.h"
+#include "core/PerfUtils.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -174,6 +175,8 @@ void HexBlockMesh::initialize()
 {
     const auto iproc = bulk_.parallel_rank();
     const bool doPrint = (iproc == 0);
+    const std::string timerName("HexBlockMesh::initialize");
+    auto timeMon = get_stopwatch(timerName);
 
     if (doPrint)
         std::cout << "HexBlockMesh: Registering parts to meta data" << std::endl;
@@ -240,6 +243,8 @@ void HexBlockMesh::initialize()
 
 void HexBlockMesh::run()
 {
+    const std::string timerName("HexBlockMesh::run");
+    auto timeMon = get_stopwatch(timerName);
     generate_elements();
 }
 
@@ -273,78 +278,89 @@ void HexBlockMesh::generate_elements()
     stk::mesh::EntityIdVector nids(8);
     bulk_.modification_begin("Adding mesh nodes");
     {
-        if (doPrint)
-            std::cout << "\tGenerating node IDs..." << std::endl;
+        {
+            if (doPrint)
+                std::cout << "\tGenerating node IDs..." << std::endl;
+            const std::string timerName("HexBlockMesh::create_nodes");
+            auto timeMon = get_stopwatch(timerName);
 
-        bulk_.generate_new_ids(stk::topology::NODE_RANK, numNodes, nodeIDs);
-
-        if (doPrint)
-            std::cout << "\tCreating nodes... " ;
-        unsigned marker = 1;
-        for (unsigned i=0; i<numNodes; i++) {
-            if (doPrint && (marker <= (i * 10 / numNodes))) {
-                std::cout << marker * 10 << "% ";
-                marker++;
+            bulk_.generate_new_ids(stk::topology::NODE_RANK, numNodes, nodeIDs);
+            if (doPrint)
+                std::cout << "\tCreating nodes... " ;
+            unsigned marker = 1;
+            for (unsigned i=0; i<numNodes; i++) {
+                if (doPrint && (marker <= (i * 10 / numNodes))) {
+                    std::cout << marker * 10 << "% ";
+                    marker++;
+                }
+                bulk_.declare_entity(
+                    stk::topology::NODE_RANK, nodeIDs[i], part);
             }
-            bulk_.declare_entity(
-                stk::topology::NODE_RANK, nodeIDs[i], part);
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
 
-        if (doPrint)
-            std::cout << "\tGenerating element IDs..." << std::endl;
+        {
+            const std::string timerName("HexBlockMesh::create_elements");
+            auto timeMon = get_stopwatch(timerName);
+            if (doPrint)
+                std::cout << "\tGenerating element IDs..." << std::endl;
 
-        bulk_.generate_new_ids(stk::topology::ELEM_RANK, numElems, elemIDs);
+            bulk_.generate_new_ids(stk::topology::ELEM_RANK, numElems, elemIDs);
 
-        if (doPrint)
-            std::cout << "\tCreating elements... " ;
-        marker = 1;
-        int idx;
-        for (int k=0; k < mz; k++) {
-            int ik = k * (nx * ny);
-            int ikp1 = (k+1) * (nx * ny);
-            for (int j=0; j < my; j++) {
-                int ij = j * nx;
-                int ijp1 = (j+1) * nx;
-                for (int i=0; i < mx; i++) {
-                    idx = k*(mx*my) + j*mx + i;
-                    nids[0] = nodeIDs[ik + ij + i];
-                    nids[1] = nodeIDs[ik + ij + i + 1];
-                    nids[2] = nodeIDs[ik + ijp1 + i + 1];
-                    nids[3] = nodeIDs[ik + ijp1 + i];
+            if (doPrint)
+                std::cout << "\tCreating elements... " ;
+            unsigned marker = 1;
+            int idx;
+            for (int k=0; k < mz; k++) {
+                int ik = k * (nx * ny);
+                int ikp1 = (k+1) * (nx * ny);
+                for (int j=0; j < my; j++) {
+                    int ij = j * nx;
+                    int ijp1 = (j+1) * nx;
+                    for (int i=0; i < mx; i++) {
+                        idx = k*(mx*my) + j*mx + i;
+                        nids[0] = nodeIDs[ik + ij + i];
+                        nids[1] = nodeIDs[ik + ij + i + 1];
+                        nids[2] = nodeIDs[ik + ijp1 + i + 1];
+                        nids[3] = nodeIDs[ik + ijp1 + i];
 
-                    nids[4] = nodeIDs[ikp1 + ij + i];
-                    nids[5] = nodeIDs[ikp1 + ij + i + 1];
-                    nids[6] = nodeIDs[ikp1 + ijp1 + i + 1];
-                    nids[7] = nodeIDs[ikp1 + ijp1 + i];
+                        nids[4] = nodeIDs[ikp1 + ij + i];
+                        nids[5] = nodeIDs[ikp1 + ij + i + 1];
+                        nids[6] = nodeIDs[ikp1 + ijp1 + i + 1];
+                        nids[7] = nodeIDs[ikp1 + ijp1 + i];
 
-                    stk::mesh::declare_element(
-                        bulk_, part, elemIDs[idx], nids);
+                        stk::mesh::declare_element(
+                            bulk_, part, elemIDs[idx], nids);
 
-                    if (doPrint && (marker <= (idx * 10 / numElems))) {
-                        std::cout << marker * 10 << "% ";
-                        marker++;
+                        if (doPrint && (marker <= (idx * 10 / numElems))) {
+                            std::cout << marker * 10 << "% ";
+                            marker++;
+                        }
                     }
                 }
             }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
 
     }
     bulk_.modification_end();
     if (doPrint)
         std::cout << "\tFinalizing bulk modifications..." << std::endl;
 
-    bulk_.modification_begin("Adding sidesets");
     {
-        generate_x_boundary(elemIDs, XMIN);
-        generate_x_boundary(elemIDs, XMAX);
-        generate_y_boundary(elemIDs, YMIN);
-        generate_y_boundary(elemIDs, YMAX);
-        generate_z_boundary(elemIDs, ZMIN);
-        generate_z_boundary(elemIDs, ZMAX);
+        const std::string timerName("HexBlockMesh::create_sidesets");
+        auto timeMon = get_stopwatch(timerName);
+        bulk_.modification_begin("Adding sidesets");
+        {
+            generate_x_boundary(elemIDs, XMIN);
+            generate_x_boundary(elemIDs, XMAX);
+            generate_y_boundary(elemIDs, YMIN);
+            generate_y_boundary(elemIDs, YMAX);
+            generate_z_boundary(elemIDs, ZMIN);
+            generate_z_boundary(elemIDs, ZMAX);
+        }
+        bulk_.modification_end();
     }
-    bulk_.modification_end();
 
 
     elemIDs.clear();
@@ -357,6 +373,8 @@ void HexBlockMesh::generate_elements()
 
 void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& nodeVec)
 {
+    const std::string timerName("HexBlockMesh::generate_coordinates");
+    auto timeMon = get_stopwatch(timerName);
     int nx = meshDims_[0] + 1;
     int ny = meshDims_[1] + 1;
     int nz = meshDims_[2] + 1;

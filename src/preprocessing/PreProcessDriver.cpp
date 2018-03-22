@@ -15,6 +15,7 @@
 
 #include "PreProcessDriver.h"
 #include "core/YamlUtils.h"
+#include "core/PerfUtils.h"
 #include <iostream>
 
 namespace sierra {
@@ -35,6 +36,7 @@ PreProcessDriver::PreProcessDriver
     std::string input_db = data["input_db"].as<std::string>();
     output_db_ = data["output_db"].as<std::string>();
     wind_utils::get_optional(data, "transfer_fields", transfer_fields_);
+    wind_utils::get_optional(data, "print_timing_stats", print_timing_stats_);
 
     if (data["ioss_8bit_ints"]) {
         io_8bit_int_ = data["ioss_8bit_ints"].as<bool>();
@@ -78,26 +80,38 @@ void PreProcessDriver::run()
     bool dowrite = (stk::parallel_machine_rank(comm_) == 0);
 
     // Perform metadata updates
-    if (dowrite) std::cout << "Performing metadata updates... " << std::endl;
-    for (auto& t: tasks_)
-        t->initialize();
-    if (dowrite) std::cout << "Metadata update completed" << std::endl;
+    {
+        const std::string timerName = "PreProcessDriver::init_metadata";
+        auto timeMon = get_stopwatch(timerName);
+        if (dowrite) std::cout << "Performing metadata updates... " << std::endl;
+        for (auto& t: tasks_)
+            t->initialize();
+        if (dowrite) std::cout << "Metadata update completed" << std::endl;
+    }
 
     // Load the bulk data
-    if (dowrite) std::cout << "Reading mesh bulk data... ";
-    mesh_->stkio().populate_bulk_data();
-    if (dowrite) std::cout << "done." << std::endl;
+    {
+        const std::string timerName = "CFDMesh::populate_bulk_data";
+        auto timeMon = get_stopwatch(timerName);
+        if (dowrite) std::cout << "Reading mesh bulk data... ";
+        mesh_->stkio().populate_bulk_data();
+        if (dowrite) std::cout << "done." << std::endl;
+    }
 
     // Perform modifications to bulk data
-    for (size_t i=0; i < tasks_.size(); i++) {
-        auto& t = tasks_[i];
-        if (dowrite)
-            std::cout
-                << "\n--------------------------------------------------\n"
-                << "Begin task: " << task_names_[i] << std::endl;
-        t->run();
-        if (dowrite) std::cout << "End task: " << task_names_[i] << std::endl;
-     }
+    {
+        const std::string timerName = "PreProcessDriver::run_tasks";
+        auto timeMon = get_stopwatch(timerName);
+        for (size_t i=0; i < tasks_.size(); i++) {
+            auto& t = tasks_[i];
+            if (dowrite)
+                std::cout
+                    << "\n--------------------------------------------------\n"
+                    << "Begin task: " << task_names_[i] << std::endl;
+            t->run();
+            if (dowrite) std::cout << "End task: " << task_names_[i] << std::endl;
+        }
+    }
 
     stk::parallel_machine_barrier(mesh_->bulk().parallel());
     if (mesh_->db_modified()) {
@@ -114,6 +128,11 @@ void PreProcessDriver::run()
         if (stk::parallel_machine_rank(comm_) == 0)
             std::cout << "Input mesh DB not modified; skipping write" << std::endl;
     }
+
+    sierra::nalu::summarize_memory_usage(comm_, std::cout);
+    if (print_timing_stats_)
+        Teuchos::TimeMonitor::summarize(
+            std::cout, false, true, false, Teuchos::Union);
 }
 
 } // nalu

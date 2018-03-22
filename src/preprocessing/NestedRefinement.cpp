@@ -16,6 +16,7 @@
 #include "NestedRefinement.h"
 #include "core/YamlUtils.h"
 #include "core/ClassRegistry.h"
+#include "core/PerfUtils.h"
 
 namespace {
 using sierra::nalu::NestedRefinement;
@@ -123,6 +124,8 @@ NestedRefinement::load(const YAML::Node& node)
 void
 NestedRefinement::initialize()
 {
+    const std::string timerName = "NestedRefinement::initialize";
+    auto timeMon = get_stopwatch(timerName);
     auto& meta = mesh_.meta();
     ScalarFieldType& refiner = meta.declare_field<ScalarFieldType>(
         stk::topology::ELEM_RANK, refineFieldName_);
@@ -143,6 +146,8 @@ NestedRefinement::initialize()
 void
 NestedRefinement::run()
 {
+    const std::string timerName = "NestedRefinement::run";
+    auto timeMon = get_stopwatch(timerName);
     auto& meta = mesh_.meta();
     auto& bulk = mesh_.bulk();
     const bool doPrint = (bulk.parallel_rank() == 0);

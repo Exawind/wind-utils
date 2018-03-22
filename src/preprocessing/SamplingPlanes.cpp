@@ -15,6 +15,7 @@
 
 #include "SamplingPlanes.h"
 #include "core/ClassRegistry.h"
+#include "core/PerfUtils.h"
 
 #include <Shards_BasicTopologies.hpp>
 
@@ -120,6 +121,8 @@ void SamplingPlanes::load(const YAML::Node& zp)
 
 void SamplingPlanes::initialize()
 {
+    const std::string timerName = "SamplingPlanes::initialize";
+    auto timeMon = get_stopwatch(timerName);
     const auto iproc = bulk_.parallel_rank();
     for (auto pName: fluidPartNames_){
         stk::mesh::Part* part = meta_.get_part(pName);
@@ -156,6 +159,8 @@ void SamplingPlanes::initialize()
 
 void SamplingPlanes::run()
 {
+    const std::string timerName = "SamplingPlanes::run";
+    auto timeMon = get_stopwatch(timerName);
     calc_bounding_box();
 
     stk::parallel_machine_barrier(bulk_.parallel());
@@ -168,6 +173,8 @@ void SamplingPlanes::run()
 
 void SamplingPlanes::calc_bounding_box()
 {
+    const std::string timerName = "SamplingPlanes::calc_bounding_box";
+    auto timeMon = get_stopwatch(timerName);
     auto iproc = bulk_.parallel_rank();
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
@@ -240,6 +247,8 @@ void SamplingPlanes::calc_bounding_box()
 
 void SamplingPlanes::generate_zplane(const double zh)
 {
+    const std::string timerName = "SamplingPlanes::generate_zplane";
+    auto timeMon = get_stopwatch(timerName);
     const unsigned iproc = bulk_.parallel_rank();
     const unsigned nproc = bulk_.parallel_size();
     const std::string pName = (boost::format(name_format_)%zh).str();

@@ -18,6 +18,7 @@
 #include "core/LinearInterpolation.h"
 #include "core/YamlUtils.h"
 #include "core/KokkosWrappers.h"
+#include "core/PerfUtils.h"
 
 #include <random>
 
@@ -70,6 +71,8 @@ void ABLFields::load(const YAML::Node& abl)
 
 void ABLFields::initialize()
 {
+    const std::string timerName = "ABLfields::initialize";
+    auto timeMon = get_stopwatch(timerName);
     if (doVelocity_) {
         VectorFieldType& velocity = meta_.declare_field<VectorFieldType>(
             stk::topology::NODE_RANK, "velocity");
@@ -91,6 +94,8 @@ void ABLFields::initialize()
 
 void ABLFields::run()
 {
+    const std::string timerName = "ABLfields::run";
+    auto timeMon = get_stopwatch(timerName);
     if (bulk_.parallel_rank() == 0)
         std::cout << "Generating ABL fields" << std::endl;
     if (doVelocity_) init_velocity_field();
@@ -171,6 +176,8 @@ void ABLFields::load_temperature_info(const YAML::Node& abl)
 
 void ABLFields::init_velocity_field()
 {
+    const std::string timerName = "ABLfields::init_velocity_field";
+    auto timeMon = get_stopwatch(timerName);
     stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
@@ -210,6 +217,8 @@ void ABLFields::perturb_velocity_field()
      */
     // TODO: Handle height as a distance from terrain
 
+    const std::string timerName = "ABLfields::perturb_velocity_field";
+    auto timeMon = get_stopwatch(timerName);
     const double pi = std::acos(-1.0);
     stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
@@ -261,6 +270,8 @@ void ABLFields::perturb_velocity_field()
 
 void ABLFields::init_temperature_field()
 {
+    const std::string timerName = "ABLfields::init_temperature_field";
+    auto timeMon = get_stopwatch(timerName);
     stk::mesh::Selector fluid_union = stk::mesh::selectUnion(fluid_parts_);
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
@@ -300,6 +311,8 @@ void ABLFields::perturb_temperature_field()
      *
      */
 
+    const std::string timerName = "ABLfields::perturb_temperature_field";
+    auto timeMon = get_stopwatch(timerName);
     stk::mesh::PartVector partVec(0);
     for (size_t i=0; i < periodicParts_.size(); i++) {
         auto* part = meta_.get_part(periodicParts_[i]);
