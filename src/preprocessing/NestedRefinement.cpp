@@ -78,24 +78,47 @@ void
 NestedRefinement::load(const YAML::Node& node)
 {
     fluidPartNames_ = node["fluid_parts"].as<std::vector<std::string>>();
-    turbineDia_ = node["turbine_diameters"].as<std::vector<double>>();
-    numTurbines_ = turbineDia_.size();
-    turbineHt_ = node["turbine_heights"].as<std::vector<double>>();
-    if (turbineHt_.size() != numTurbines_)
-        throw std::runtime_error("NestedRefinement:: Incorrect sizes for input data.");
-
     auto tLocs = node["turbine_locations"].as<std::vector<std::vector<double>>>();
-    if (tLocs.size() != numTurbines_)
-        throw std::runtime_error("NestedRefinement:: Incorrect sizes for input data.");
+    numTurbines_ = tLocs.size();
     turbineLocs_.resize(numTurbines_);
     for (size_t i=0; i < numTurbines_; i++)
         for (size_t j=0; j < 3; j++)
             turbineLocs_[i][j] = tLocs[i][j];
 
+    {
+        auto& tmp = node["turbine_diameters"];
+        if (tmp.Type() == YAML::NodeType::Scalar) {
+            turbineDia_.resize(numTurbines_);
+            const double tdia = tmp.as<double>();
+            for (size_t t=0; t < numTurbines_; t++)
+                turbineDia_[t] = tdia;
+        } else {
+            turbineDia_ = node["turbine_diameters"].as<std::vector<double>>();
+            if (turbineDia_.size() != numTurbines_)
+                throw std::runtime_error(
+                    "NestedRefinement:: Turbine diameters don't match number of turbines");
+        }
+    }
+
+    {
+        auto& tmp = node["turbine_heights"];
+        if (tmp.Type() == YAML::NodeType::Scalar) {
+            turbineHt_.resize(numTurbines_);
+            const double tht = tmp.as<double>();
+            for (size_t t=0; t < numTurbines_; t++)
+                turbineHt_[t] = tht;
+        } else {
+            turbineHt_ = node["turbine_heights"].as<std::vector<double>>();
+            if (turbineHt_.size() != numTurbines_)
+                throw std::runtime_error(
+                    "NestedRefinement:: Turbine heights don't match number of turbines");
+        }
+    }
+
     refineLevels_ = node["refinement_levels"].as<std::vector<std::vector<double>>>();
     numLevels_ = refineLevels_.size();
     for (size_t i=0; i < numLevels_; i++)
-        if (refineLevels_[i].size() != 3)
+        if (refineLevels_[i].size() != 4)
             throw std::runtime_error("NestedRefinement:: Incorrect sizes for input data.");
 
     wind_utils::get_optional(node, "search_tolerance", searchTol_);
@@ -170,7 +193,7 @@ NestedRefinement::run()
             compute_midpoint(bulk, *coords, elem, midPt);
 
             double* refval = stk::mesh::field_data(*refiner, elem);
-            refval[0] = compute_refine_fraction(midPt);
+            refval[0] = std::max(refval[0], compute_refine_fraction(midPt));
         }
     }
 
@@ -272,7 +295,7 @@ NestedRefinement::process_inputs()
                 if (i == 2)
                     corners_[offset + iz][i] += turbineHt_[it];
                 for (int j=0; j < 3; j++) {
-                    int ix = (j == 0)? 0 : 2;
+                    int ix = (j == 0)? 0 : (j + 1);
                     corners_[offset+iz][i] -= (
                          boxAxes_[it][j][i] * refineLevels_[iz][ix] * turbineDia_[it]);
                 }
@@ -284,7 +307,7 @@ NestedRefinement::process_inputs()
             boxLengths_[offset + iz][1] =
                 2.0 * turbineDia_[it] * refineLevels_[iz][2] + searchTol_;
             boxLengths_[offset + iz][2] =
-                2.0 * turbineDia_[it] * refineLevels_[iz][2] + searchTol_;
+                2.0 * turbineDia_[it] * refineLevels_[iz][3] + searchTol_;
         }
     }
 }
