@@ -114,9 +114,8 @@ void ChannelFields::load_velocity_info(const YAML::Node& channel)
     throw std::runtime_error("ChannelFields: missing mandatory viscosity parameter");
 }
 
-void ChannelFields::load_tke_info(const YAML::Node& channel)
-{
-}
+void ChannelFields::load_tke_info(const YAML::Node&)
+{}
 
 void ChannelFields::setup_parameters()
 {
@@ -137,14 +136,14 @@ double ChannelFields::reichardt(const double y)
     return (1.0/kappa_ * log(1.0 + kappa_ * yp)) + (C_ - log(kappa_) / kappa_) * (1 - exp(- yp / 11.0) - yp / 11.0 * exp(- yp / 3));
 }
 
-double ChannelFields::u_perturbation(const double x, const double y, const double z)
+double ChannelFields::u_perturbation(const double x, const double, const double z)
 {
     const double pert_u = a_pert_u_ * sin(k_pert_u_ * M_PI / width_ * z) * sin(k_pert_u_ * M_PI / length_ * x);
     const double rand_u = a_rand_u_ * (2. * (double)rand() / RAND_MAX - 1);
     return pert_u * rand_u;
 }
 
-double ChannelFields::w_perturbation(const double x, const double y, const double z)
+double ChannelFields::w_perturbation(const double x, const double, const double z)
 {
     const double pert_w = a_pert_w_ * sin(k_pert_w_ * M_PI / length_ * x)  * sin(k_pert_w_ * M_PI / width_ * z);
     const double rand_w = a_rand_w_ * (2. * (double)rand() / RAND_MAX - 1);

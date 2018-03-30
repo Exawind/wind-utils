@@ -234,7 +234,6 @@ void ABLFields::perturb_velocity_field()
     const double xMax = bbox.get_x_max();
     const double yMin = bbox.get_y_min();
     const double yMax = bbox.get_y_max();
-    const double zMax = bbox.get_z_max();
 
     const double aval = (Uperiods_ * 2.0 * pi / (yMax - yMin));
     const double bval = (Vperiods_ * 2.0 * pi / (xMax - xMin));

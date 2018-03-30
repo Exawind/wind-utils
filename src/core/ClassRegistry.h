@@ -66,7 +66,7 @@
                                                                                           \
     private:                                                                              \
         std::string lookup_;                                                              \
-    };
+    }
 
 //! Initialize the static members of class registration infrastructure
 #define DEFINE_INHERITANCE_REGISTRY(baseCls)                                              \

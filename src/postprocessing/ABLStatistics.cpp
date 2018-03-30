@@ -96,7 +96,8 @@ ABLStatistics::initialize()
         stk::topology::NODE_RANK, field_map_["velocity"]);
     auto& temperature = meta_.declare_field<ScalarFieldType>(
         stk::topology::NODE_RANK, field_map_["temperature"]);
-    stk::mesh::FieldBase* sfs_stress = &meta_.declare_field<stk::mesh::Field<double, stk::mesh::SimpleArrayTag>>(
+    stk::mesh::FieldBase *sfs_stress = &meta_.declare_field<
+        stk::mesh::Field<double, stk::mesh::SimpleArrayTag>>(
         stk::topology::NODE_RANK, field_map_["sfs_stress"]);
 
     for (auto* part: fluid_parts_) {
@@ -143,8 +144,6 @@ ABLStatistics::average_planes()
         stk::topology::NODE_RANK, field_map_["velocity"]);
     const ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
         stk::topology::NODE_RANK, field_map_["temperature"]);
-    const stk::mesh::FieldBase* sfs_stress = meta_.get_field(
-        stk::topology::NODE_RANK, field_map_["sfs_stress"]);
 
     // Initialize mean arrays to zero before we start accumulation
     for (int ih=0; ih < nheights_; ih++) {

@@ -46,7 +46,8 @@ RotateMesh::RotateMesh(
     meta_(mesh.meta()),
     bulk_(mesh.bulk()),
     meshPartNames_(),
-    meshParts_()
+    meshParts_(),
+    ndim_(meta_.spatial_dimension())
 {
     load(node);
 }
