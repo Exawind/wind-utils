@@ -18,6 +18,7 @@
  *  ABL block mesh generation utility
  */
 
+#include "mesh/HexBlockBase.h"
 #include "mesh/HexBlockMesh.h"
 #include "core/YamlUtils.h"
 #include "core/PerfUtils.h"
@@ -76,12 +77,17 @@ int main(int argc, char** argv)
 
     std::unique_ptr<sierra::nalu::CFDMesh> mesh(new sierra::nalu::CFDMesh(comm, 3));
 
-    sierra::nalu::HexBlockMesh blockMesh(*mesh, node);
+    // sierra::nalu::HexBlockMesh blockMesh(*mesh, node);
+    std::string mesh_type = "generate_ablmesh";
+    if (node["mesh_type"])
+        mesh_type = node["mesh_type"].as<std::string>();
+    std::unique_ptr<sierra::nalu::HexBlockBase> blockMesh(
+        sierra::nalu::HexBlockBase::create(*mesh, node, mesh_type));
 
-    blockMesh.initialize();
+    blockMesh->initialize();
     mesh->meta().commit();
 
-    blockMesh.run();
+    blockMesh->run();
 
     std::cout << "Writing mesh to file: " << output_db << std::endl;
     bool set_64bit = false;

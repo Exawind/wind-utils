@@ -1,11 +1,13 @@
 
-# add_library(nalumeshutils
+# add_library(nalumeshutils SHARED
 #   # Mesh spacing functions
 #   spacing/MeshSpacing.cpp
 #   spacing/ConstantSpacing.cpp
 #   spacing/GeometricStretching.cpp
-#
+
+#   HexBlockBase.cpp
 #   HexBlockMesh.cpp
+#   Plot3DMesh.cpp
 #   )
 # target_link_libraries(nalumeshutils utilscore
 #   ${Trilinos_TPL_LIBRARIES}
@@ -19,7 +21,9 @@ add_executable(abl_mesh
   spacing/ConstantSpacing.cpp
   spacing/GeometricStretching.cpp
 
+  HexBlockBase.cpp
   HexBlockMesh.cpp
+  Plot3DMesh.cpp
   abl_mesh.cpp)
 
 target_link_libraries(abl_mesh
@@ -39,7 +43,7 @@ if(MPI_LINK_FLAGS)
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif(MPI_LINK_FLAGS)
 
-#install(TARGETS nalumeshutils
+# install(TARGETS nalumeshutils
 #  EXPORT "${CMAKE_PROJECT_NAME}Libraries"
 #  RUNTIME DESTINATION bin
 #  LIBRARY DESTINATION lib
