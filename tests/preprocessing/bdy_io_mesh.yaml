@@ -1,0 +1,11 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: bdy_io_mesh.g
+
+  tasks:
+    - create_bdy_io_mesh
+
+  create_bdy_io_mesh:
+    output_db: io_transfer.exo
+    boundary_parts: [south, west]

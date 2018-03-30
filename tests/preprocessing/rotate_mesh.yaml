@@ -1,0 +1,15 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: percept_refine.g
+
+  tasks:
+    - rotate_mesh
+
+  rotate_mesh:
+    mesh_parts:
+      - fluid_part
+
+    angle: 45.0
+    origin: [0.0, 0.0, 0.0]
+    axis: [0.0, 0.0, 1.0]

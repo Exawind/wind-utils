@@ -46,6 +46,9 @@ if (ENABLE_SPHINX_DOCS OR ENABLE_DOXYGEN_DOCS)
   add_subdirectory(doc)
 endif()
 
+include(CTest)
+add_subdirectory(tests)
+
 # Install library dependency information
 install(EXPORT ${CMAKE_PROJECT_NAME}Libraries
   DESTINATION lib/cmake/${CMAKE_PROJECT_NAME}

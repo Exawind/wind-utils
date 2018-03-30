@@ -1,0 +1,5 @@
+
+nalu_abl_mesh:
+  mesh_type: convert_plot3d
+  plot3d_file: ../grids/grid.p3d
+  output_db: p3d_grid.exo

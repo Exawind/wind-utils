@@ -1,0 +1,24 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: percept_refine.g
+
+  tasks:
+    - mesh_local_refinement
+
+  mesh_local_refinement:
+    fluid_parts: [fluid_part]
+    write_percept_files: true
+    percept_file_prefix: adapt
+    search_tolerance: 21.0
+
+    turbine_diameters:  25.0
+    turbine_heights:   30.0
+    turbine_locations:
+      - [ 500.0, 500.0, 0.0]
+    orientation:
+      type: wind_direction
+      wind_direction: 318.7
+    refinement_levels:
+      - [ 5.0, 10.0, 3.0, 2.5]
+      - [ 3.0, 6.0, 1.5, 1.8 ]

@@ -1,0 +1,14 @@
+
+nalu_abl_mesh:
+  output_db: channel_mesh.g
+  spec_type: bounding_box
+
+  vertices:
+    - [0.0, 0.0, 0.0]
+    - [20.0, 2.0, 0.1]
+
+  mesh_dimensions: [20, 40, 2]
+
+  y_spacing:
+    spacing_type: geometric_stretching
+    stretching_factor: 1.1

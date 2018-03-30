@@ -1,0 +1,14 @@
+
+nalu_preprocess:
+  input_db: ../grids/channel_mesh.exo
+  output_db: channel_fields.g
+
+  tasks:
+    - init_channel_fields
+
+  init_channel_fields:
+    fluid_parts: [ fluid_part ]
+    turbulent_ke: yes
+    velocity:
+      Re_tau: 550.0
+      viscosity : 0.0000157

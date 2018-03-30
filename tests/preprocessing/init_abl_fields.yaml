@@ -1,0 +1,28 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: init_abl_fields.g
+
+  tasks:
+    - init_abl_fields
+
+  init_abl_fields:
+    fluid_parts: [fluid_part]
+
+    velocity:
+      heights: [ 0.0, 1000.0]
+      values:
+        - [7.250462296293199, 3.380946093925596, 0.0]
+        - [7.250462296293199, 3.380946093925596, 0.0]
+      perturbations:
+        reference_height: 50.0
+        amplitude: [1.0, 1.0]
+        periods: [4.0, 4.0]
+
+    temperature:
+      heights: [    0, 650.0, 750.0, 1000.0 ]
+      values:  [300.0, 300.0, 308.0,  308.75]
+      perturbations:
+        amplitude: 0.8
+        cutoff_height: 600.0
+        skip_periodic_parts: [ west, east, north, south]

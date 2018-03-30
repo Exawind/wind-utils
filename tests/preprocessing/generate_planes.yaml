@@ -1,0 +1,14 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: generate_planes.g
+
+  tasks:
+    - generate_planes
+
+  generate_planes:
+    fluid_part: fluid_part
+    heights: [45.0, 90.0]
+    part_name_format: "zplane_%06.1f"
+    dx: 20
+    dy: 20

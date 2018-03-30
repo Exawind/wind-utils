@@ -1,0 +1,12 @@
+
+nalu_abl_mesh:
+  output_db: abl_mesh_bbox.exo
+  ioss_8bit_ints: false
+
+  spec_type: bounding_box
+
+  vertices:
+    - [0.0, 0.0, 0.0]
+    - [500.0, 500.0, 500.0]
+
+  mesh_dimensions: [20, 20, 20]
