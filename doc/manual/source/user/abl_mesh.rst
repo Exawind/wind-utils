@@ -4,10 +4,8 @@
 =========================================
 
 The ``abl_mesh`` executable can be used to generate structured mesh with HEX-8
-elements in Exodus-II format. The interface is similar to OpenFOAM's
-``blockMesh`` utility and can be used to generate simple meshes for ABL
-simulations on flat terrain without resorting to commercial mesh generation
-software, e.g., Pointwise.
+elements in Exodus-II format. It can generate meshes from scratch or convert
+from other formats to Exodus-II format.
 
 Command line invocation
 -----------------------
@@ -35,7 +33,6 @@ Command line invocation
    	Generating coordinates...
    Writing mesh to file: ablmesh.exo
 
-
 .. program:: abl_mesh
 
 .. option:: -i, --input-file
@@ -43,16 +40,73 @@ Command line invocation
    YAML input file to be processed for mesh generation details. Default:
    ``nalu_abl_mesh.yaml``.
 
-Input File Parameters
----------------------
+Common Input File Parameters
+----------------------------
 
 The input file must contain a ``nalu_abl_mesh`` section that contains the input
-parameters.A sample input file is shown below
+parameters.
+
+
+.. confval:: mesh_type
+
+   This variable can take the following options:
+
+   - ``generate_ablmesh`` - Will generate a structured HEX mesh, and is the
+     default for ``mesh_type`` if not present in the input file. See
+     :ref:`structured_mesh_generation` for more details.
+
+   - ``convert_plot3d`` - Converts a Plot3D binary file to Exodus-II format for
+     use with Nalu. See :ref:`plot3d_conversion` for more details.
+
+.. confval:: output_db [nalu_abl_mesh]
+
+   The Exodus-II filename where the mesh is output. No default, must be provided
+   by the user.
+
+.. confval:: fluid_part_name
+
+   Name of the element block created with HEX-8 elements. Default value:
+   ``fluid_part``.
+
+.. confval:: ioss_8bit_ints
+
+   Boolean flag that enables output of 8-bit ints when writing Exodus mesh.
+   Default value: false.
+
+Boundary names
+~~~~~~~~~~~~~~
+
+The user has the option to provide custom boundary names through the input file.
+Use the boundary name input parameters to change the default parameters. If
+these are not provided the default boundary names are described below:
+
+======================  =====================
+Boundary                Default sideset name
+======================  =====================
+``xmin_boundary_name``  ``west``
+``xmax_boundary_name``  ``east``
+``ymin_boundary_name``  ``south``
+``ymax_boundary_name``  ``north``
+``zmin_boundary_name``  ``terrain``
+``zmax_boundary_name``  ``top``
+======================  =====================
+
+.. _structured_mesh_generation:
+
+Structured Mesh Generation
+--------------------------
+
+The interface is similar to OpenFOAM's ``blockMesh`` utility and can be used to
+generate simple meshes for ABL simulations on flat terrain without resorting to
+commercial mesh generation software, e.g., Pointwise.
+
+A sample input file is shown below
 
 .. code-block:: yaml
    :linenos:
 
    nalu_abl_mesh:
+     mesh_type: generate_ablmesh
      output_db: ablmesh.exo
 
      spec_type: bounding_box
@@ -62,12 +116,6 @@ parameters.A sample input file is shown below
        - [10.0, 10.0, 10.0]
 
      mesh_dimensions: [10, 10, 10]
-
-
-.. confval:: output_db [nalu_abl_mesh]
-
-   The Exodus-II filename where the mesh is output. No default, must be provided
-   by the user.
 
 .. confval:: spec_type
 
@@ -97,33 +145,6 @@ parameters.A sample input file is shown below
    For a trapezoidal prism, the code will interpret the major axis along
    ``1-2``, ``1-4``, and ``1-5`` edges respectively.
 
-.. confval:: fluid_part_name
-
-   Name of the element block created with HEX-8 elements. Default value:
-   ``fluid_part``.
-
-.. confval:: ioss_8bit_ints
-
-   Boolean flag that enables output of 8-bit ints when writing Exodus mesh.
-   Default value: false.
-
-Boundary names
-~~~~~~~~~~~~~~
-
-The user has the option to provide custom boundary names through the input file.
-Use the boundary name input parameters to change the default parameters. If
-these are not provided the default boundary names are described below:
-
-======================  =====================
-Boundary                Default sideset name
-======================  =====================
-``xmin_boundary_name``  ``west``
-``xmax_boundary_name``  ``east``
-``ymin_boundary_name``  ``south``
-``ymax_boundary_name``  ``north``
-``zmin_boundary_name``  ``terrain``
-``zmax_boundary_name``  ``top``
-======================  =====================
 
 Mesh spacing
 ~~~~~~~~~~~~
@@ -166,3 +187,21 @@ Limitations
 
 #. Must be run on a single processor, running with multiple MPI ranks is currently
    unsupported.
+
+.. _plot3d_conversion:
+
+Converting Plot3D to Exodus-II
+------------------------------
+
+An example input block is shown below:
+
+.. code-block:: yaml
+
+   nalu_abl_mesh:
+     mesh_type: convert_plot3d
+     plot3d_file: grid.p3d
+     output_db: p3d_grid.exo
+
+.. confval:: plot3d_file
+
+   Path to the Plot3D grid file in binary format.

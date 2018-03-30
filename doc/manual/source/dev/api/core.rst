@@ -29,3 +29,10 @@ YAML utilities
 .. namespace:: sierra::nalu
 
 .. doxygenfile:: core/YamlUtils.h
+
+Performance Monitoring Utilities
+--------------------------------
+
+.. namespace:: sierra::nalu
+
+.. doxygenfile:: core/PerfUtils.h

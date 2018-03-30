@@ -1,10 +1,16 @@
 Meshing Utilities
 =================
 
-HexBlockMesh
-------------
+Mesh Generation and Conversion
+------------------------------
+
+.. doxygenclass:: sierra::nalu::HexBlockBase
+   :members:
 
 .. doxygenclass:: sierra::nalu::HexBlockMesh
+   :members:
+
+.. doxygenclass:: sierra::nalu::Plot3DMesh
    :members:
 
 Mesh Spacing Options
