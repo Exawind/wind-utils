@@ -114,7 +114,7 @@ protected:
     std::vector<int> meshDims_;
 
     //! Name of the fluid domain block
-    std::string blockName_{"fluid_part"};
+    std::string blockName_{"fluid"};
 
     // Names for the boundary sidesets
 
