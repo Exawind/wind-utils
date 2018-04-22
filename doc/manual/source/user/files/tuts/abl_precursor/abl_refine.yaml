@@ -1,0 +1,30 @@
+# -*- mode: yaml -*-
+#
+# Locally refine the ABL mesh around turbines for use with actuator line
+# simulations of wind farms
+#
+
+nalu_preprocess:
+  input_db: abl_1x1x1_10_mesh.exo
+  output_db: mesh0.e
+
+  tasks:
+    - mesh_local_refinement
+
+  mesh_local_refinement:
+    fluid_parts: [ fluid ]
+    write_percept_files: true
+    percept_file_prefix: adapt
+    search_tolerance: 11.0
+
+    turbine_diameters:  80.0
+    turbine_heights: 70.0
+    turbine_locations:
+      - [ 550.0, 350.0, 0.0 ]
+      - [ 400.0, 500.0, 0.0 ]
+    orientation:
+      type: wind_direction
+      wind_direction: 245.0
+    refinement_levels:
+      - [ 4.0, 4.0, 2.0, 2.0 ]
+      - [ 3.0, 3.0, 1.2, 1.2 ]
