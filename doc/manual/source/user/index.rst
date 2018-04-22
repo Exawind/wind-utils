@@ -7,6 +7,7 @@ User Manual
    :maxdepth: 4
 
    installation
+   tuts/index
    nalu_preprocess
    nalu_postprocess
    wrftonalu

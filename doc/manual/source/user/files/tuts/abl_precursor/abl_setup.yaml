@@ -1,0 +1,58 @@
+# -*- mode: yaml -*-
+#
+# Generate an ABL precursor mesh and initialize necessary field data
+#
+
+#
+# 1. Generate ABL mesh
+#
+nalu_abl_mesh:
+  output_db: abl_1x1x1_10_mesh.exo   # output filename
+
+  spec_type: bounding_box            # Vertex input type
+
+  vertices:
+    - [    0.0,    0.0,    0.0 ]     # min corner
+    - [ 1000.0, 1000.0, 1000.0 ]     # max corner
+
+  mesh_dimensions: [ 100, 100, 100]  # number of elements in each direction
+
+
+#
+# 2. Preprocessing
+#
+nalu_preprocess:
+  input_db: abl_1x1x1_10_mesh.exo
+  output_db: abl_1x1x1_10.exo
+
+  tasks:
+    - init_abl_fields
+    - generate_planes
+
+  init_abl_fields:
+    fluid_parts: [ fluid ]
+
+    velocity:
+      heights: [ 0.0, 1000.0]
+      values:
+        - [7.250462296293199, 3.380946093925596, 0.0]
+        - [7.250462296293199, 3.380946093925596, 0.0]
+      perturbations:
+        reference_height: 50.0
+        amplitude: [1.0, 1.0]
+        periods: [4.0, 4.0]
+
+    temperature:
+      heights: [    0, 650.0, 750.0, 1000.0 ]
+      values:  [300.0, 300.0, 308.0,  308.75]
+      perturbations:
+        amplitude: 0.8
+        cutoff_height: 600.0
+        skip_periodic_parts: [ west, east, north, south]
+
+  generate_planes:
+    fluid_part: fluid
+    heights: [90.0]
+    part_name_format: "zplane_%06.1f"
+    dx: 10
+    dy: 10
