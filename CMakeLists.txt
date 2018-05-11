@@ -26,6 +26,7 @@ option(ENABLE_SPHINX_API_DOCS "Enable linking Doxygen API documentation to Sphin
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
 find_package(YAMLCPP REQUIRED)
+find_package(OpenMP)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")
   set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
@@ -39,6 +40,12 @@ include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
 include_directories(SYSTEM ${Trilinos_TPL_INCLUDE_DIRS})
 include_directories(SYSTEM ${YAML_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if (OPENMP_FOUND)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
 
 add_subdirectory(src)
 
