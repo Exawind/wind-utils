@@ -5,6 +5,7 @@ add_executable(nalu_preprocess
   SamplingPlanes.cpp
   ABLFields.cpp
   ChannelFields.cpp
+  HITFields.cpp
   RotateMesh.cpp
   BdyIOPlanes.cpp
   NestedRefinement.cpp
