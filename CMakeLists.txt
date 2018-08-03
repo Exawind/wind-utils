@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.1)
 project(NaluWindUtils CXX C Fortran)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${MPI_DIR} ${YAML_DIR} ${CMAKE_PREFIX_PATH})
 
 option(ENABLE_WRFTONALU "Enable WRF to Nalu Fortran conversion utility" off)
 option(ENABLE_SPHINX_DOCS "Enable Sphinx-based user/developer manual" off)
