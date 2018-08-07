@@ -13,12 +13,12 @@
 
 find_path(YAML_INCLUDE_DIRS
   yaml-cpp/yaml.h
-  HINTS ${YAML_ROOT} ${CMAKE_INSTALL_PREFIX}
+  HINTS ${YAML_DIR} ${CMAKE_INSTALL_PREFIX}
   PATH_SUFFIXES include)
 
 find_library(YAML_LIBRARIES
   NAMES libyaml-cpp.a yaml-cpp
-  HINTS ${YAML_ROOT} ${CMAKE_INSTALL_PREFIX}
+  HINTS ${YAML_DIR} ${CMAKE_INSTALL_PREFIX}
   PATH_SUFFIXES lib)
 
 include(FindPackageHandleStandardArgs)
