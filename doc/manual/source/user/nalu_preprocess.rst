@@ -140,10 +140,38 @@ with an ABL precursor simulations based on the parameters provided by the user
 and writes it out to the :confval:`output_db`. It is safe to run
 ``init_abl_fields`` in parallel. A sample invocation is shown below
 
-.. literalinclude:: files/nalu_preprocess.yaml
-   :language: yaml
+.. code-block:: yaml
    :linenos:
-   :lines: 27-44
+
+   init_abl_fields:
+     fluid_parts: [fluid]
+
+     temperature:
+       heights: [    0, 650.0, 750.0, 10750.0]
+       values:  [280.0, 280.0, 288.0,   318.0]
+
+       # Optional section to add random perturbations to temperature field
+       perturbations:
+         amplitude: 0.8 # in Kelvin
+         cutoff_height: 600.0 # Perturbations below capping inversion
+         skip_periodic_parts: [east, west, north, south]
+
+     velocity:
+       heights: [0.0, 10.0, 30.0, 70.0, 100.0, 650.0, 10000.0]
+       values:
+         - [ 0.0, 0.0, 0.0]
+         - [4.81947, -4.81947, 0.0]
+         - [5.63845, -5.63845, 0.0]
+         - [6.36396, -6.36396, 0.0]
+         - [6.69663, -6.69663, 0.0]
+         - [8.74957, -8.74957, 0.0]
+         - [8.74957, -8.74957, 0.0]
+
+       # Optional section to add sinusoidal streaks to the velocity field
+       perturbations:
+         reference_height: 50.0   # Reference height for damping
+         amplitude: [1.0, 1.0]    # Perturbation amplitudes in Ux and Uy
+         periods: [4.0, 4.0]      # Num. periods in x and y directions
 
 .. confval:: fluid_parts
 
@@ -156,6 +184,14 @@ and writes it out to the :confval:`output_db`. It is safe to run
    ``values`` at those heights. The data must be provided in SI units. No
    conversion is performed within the code.
 
+   The temperature section can contain an optional section ``perturbations``
+   (lines 8-12) that will add fluctuations to the temperature field. It requires
+   three parameters: 1. the amplitude of oscillations (in degrees Kelvin), 2.
+   the cutoff height above which perturbations are not added, and a list of
+   sidesets where the perturbations should not be added. It is important that
+   the perturbations are not added to the periodic sidesets, otherwise the Nalu
+   simulations will show spurious flow structures.
+
 .. confval:: velocity
 
    A YAML dictionary containing two arrays: ``heights`` and the corresponding
@@ -163,6 +199,10 @@ and writes it out to the :confval:`output_db`. It is safe to run
    conversion is performed within the code. The values in this case are two
    dimensional lists of shape ``[nheights, 3]`` where ``nheights`` is the length
    of the `heights` array provided.
+
+   Like temperature, the user can add sinusoidal streaks to the velocity field
+   to trigger the turbulence generation -- see lines 25-29. The implementation
+   follows the method used in SOWFA.
 
 .. note::
 
