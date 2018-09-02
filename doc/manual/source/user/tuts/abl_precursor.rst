@@ -41,6 +41,7 @@ in the input file is shown below
 
 .. literalinclude:: ../files/tuts/abl_precursor/abl_setup.yaml
    :lines: 6-20
+   :linenos:
 
 With this section saved in the input file :file:`abl_setup.yaml`, the sample
 interaction is shown below
@@ -87,20 +88,15 @@ shown below
 
 The following actions are performed
 
-#. Lines 15--19: Initialize a constant velocity field such that the wind speed is 8.0 m/s
+#. Lines 14--18: Initialize a constant velocity field such that the wind speed is 8.0 m/s
    along :math:`245^\circ` compass direction.
 
-#. Lines 25--27: A constant temperature field of 300K till 650m and then a
+#. Lines 24--26: A constant temperature field of 300K till 650m and then a
    capping inversion between 650m to 750m and a temperature gradient of 0.003
    K/m above the capping inversion zone.
 
-#. Lines 33-38: A *sampling plane* parallel to the z-axis at hub-height of 90m
-   where the velocity is sampled to estimate the driving pressure gradient such
-   that the final velocity at 90m is 8m/s with a wind direction of
-   :math:`245^\circ` degrees.
-
-#. Pertubations to the velocity (lines 20--23) and temperature field (lines
-   28--31) to kick off turbulence generation during the precursor run. The
+#. Pertubations to the velocity (lines 19--22) and temperature field (lines
+   27--30) to kick off turbulence generation during the precursor run. The
    velocity field perturbations are similar to those generated in SOWFA for ABL
    precursor runs.
 
@@ -115,13 +111,10 @@ Output from the execution of :program:`nalu_preprocess` with this input file is 
 
   Nalu Preprocessing Utility
   Input file: abl_setup.yaml
-  Found 2 tasks
+  Found 1 tasks
       - init_abl_fields
-      - generate_planes
 
   Performing metadata updates...
-  SamplingPlanes: Registering parts to meta data:
-  	 zplane_0090.0
   Metadata update completed
   Reading mesh bulk data... done.
 
@@ -129,14 +122,6 @@ Output from the execution of :program:`nalu_preprocess` with this input file is 
   Begin task: init_abl_fields
   Generating ABL fields
   End task: init_abl_fields
-
-  --------------------------------------------------
-  Begin task: generate_planes
-  Mesh bounding box:
-  	0	0	0
-  	1000	1000	1000
-  Number of nodes per plane: 10201 [ 101 x 101 ]
-  End task: generate_planes
 
   All tasks completed; writing mesh...
   Exodus results file: abl_1x1x1_10.exo

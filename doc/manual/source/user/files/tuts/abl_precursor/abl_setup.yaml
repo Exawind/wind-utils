@@ -27,7 +27,6 @@ nalu_preprocess:
 
   tasks:
     - init_abl_fields
-    - generate_planes
 
   init_abl_fields:
     fluid_parts: [ fluid ]
@@ -49,10 +48,3 @@ nalu_preprocess:
         amplitude: 0.8
         cutoff_height: 600.0
         skip_periodic_parts: [ west, east, north, south]
-
-  generate_planes:
-    fluid_part: fluid
-    heights: [90.0]
-    part_name_format: "zplane_%06.1f"
-    dx: 10
-    dy: 10
