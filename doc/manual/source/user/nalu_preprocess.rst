@@ -13,7 +13,6 @@ Task type                  Description
 =========================  ===========================================================
 ``init_abl_fields``        Initialize ABL velocity and temperature fields
 ``init_channel_fields``    Initialize channel velocity fields
-``generate_planes``        Generate horizontal sampling planes for ``dp/dx`` forcing
 ``create_bdy_io_mesh``     Create an I/O transfer mesh for sampling inflow planes
 ``mesh_local_refinement``  Local refinement around turbines for wind farm simulations
 ``rotate_mesh``            Rotate mesh
@@ -375,8 +374,65 @@ parallel. A sample invocation is shown below
    number, ``Re_tau``, and the kinematic ``viscosity``
    (:math:`m^2/s`).
 
+
+``create_bdy_io_mesh``
+----------------------
+
+Create an I/O transfer mesh containing the boundaries of a given ABL precursor
+mesh. The I/O transfer mesh can be used with Nalu during the precursor runs to
+dump inflow planes for use with a later wind farm LES simulation with
+inflow/outflow boundaries. Unlike other utilities described in this section,
+this utility creates a new mesh instead of adding to the database written out by
+the :program:`nalu_preprocess` executable. It is safe to invoke this task in a
+parallel MPI run.
+
+.. confval:: output_db
+
+   Name of the I/O transfer mesh where the boundary planes are written out. This
+   argument is mandatory.
+
+.. confval:: boundary_parts
+
+   A list of boundary parts that are saved in the I/O mesh. The names in the
+   list must correspond to the names of the sidesets in the given ABL mesh.
+
+
+``rotate_mesh``
+---------------
+
+Rotates the mesh given angle, origin, and axis using quaternion rotations.
+
+.. confval:: mesh_parts
+
+   A list of element block names that must be rotated.
+
+.. confval:: angle
+
+   The rotation angle in degrees.
+
+.. confval:: origin
+
+   An (x, y, z) coordinate for mesh rotation.
+
+.. confval:: axis
+
+   A unit vector about which the mesh is rotated.
+
+.. code-block:: yaml
+   :linenos:
+
+   rotate_mesh:
+     mesh_parts:
+       - unspecified-2-hex
+
+     angle: 30.0
+     origin: [500.0, 0.0, 0.0]
+     axis: [0.0, 0.0, 1.0]
+
 ``generate_planes``
 -------------------
+
+.. deprecated:: Since 2018-09-01
 
 Generates horizontal planes of nodesets at given heights that are used for
 sampling velocity and temperature fields during an ABL simulation. The resulting
@@ -464,58 +520,3 @@ Example using custom vertices
        - [500.0, -250.0]
        - [750.0, 0.0]
        - [500.0, 250.0]
-
-
-``create_bdy_io_mesh``
-----------------------
-
-Create an I/O transfer mesh containing the boundaries of a given ABL precursor
-mesh. The I/O transfer mesh can be used with Nalu during the precursor runs to
-dump inflow planes for use with a later wind farm LES simulation with
-inflow/outflow boundaries. Unlike other utilities described in this section,
-this utility creates a new mesh instead of adding to the database written out by
-the :program:`nalu_preprocess` executable. It is safe to invoke this task in a
-parallel MPI run.
-
-.. confval:: output_db
-
-   Name of the I/O transfer mesh where the boundary planes are written out. This
-   argument is mandatory.
-
-.. confval:: boundary_parts
-
-   A list of boundary parts that are saved in the I/O mesh. The names in the
-   list must correspond to the names of the sidesets in the given ABL mesh.
-
-
-``rotate_mesh``
----------------
-
-Rotates the mesh given angle, origin, and axis using quaternion rotations.
-
-.. confval:: mesh_parts
-
-   A list of element block names that must be rotated.
-
-.. confval:: angle
-
-   The rotation angle in degrees.
-
-.. confval:: origin
-
-   An (x, y, z) coordinate for mesh rotation.
-
-.. confval:: axis
-
-   A unit vector about which the mesh is rotated.
-
-.. code-block:: yaml
-   :linenos:
-
-   rotate_mesh:
-     mesh_parts:
-       - unspecified-2-hex
-
-     angle: 30.0
-     origin: [500.0, 0.0, 0.0]
-     axis: [0.0, 0.0, 1.0]
