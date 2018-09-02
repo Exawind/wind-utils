@@ -224,7 +224,14 @@ performing the ABL simulations with a coarser mesh resolution.
 .. code-block:: bash
 
    # Load necessary percept modules ...
-   mpiexec -np ${NPROCS} mesh_adapt --refine=DEFAULT --RAR_info=adapt1.yaml --progress_meter=1 --input_mesh=mesh0.e --output_mesh=mesh1.e --ioss_read_options="auto-decomp:yes" --ioss_write_options="large,auto-join:yes"
+   mpiexec -np ${NPROCS} mesh_adapt \
+                --refine=DEFAULT \
+                --RAR_info=adapt1.yaml \
+                --progress_meter=1 \
+                --input_mesh=mesh0.e \
+                --output_mesh=mesh1.e \
+                --ioss_read_options="auto-decomp:yes" \
+                --ioss_write_options="large,auto-join:yes"
 
 .. note::
 
