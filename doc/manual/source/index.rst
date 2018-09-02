@@ -8,8 +8,8 @@ Nalu Wind Utilities User Manual
    :Version: |version|
    :Date: |today|
 
-NaluWindUtils is a companion software library to `Nalu
-<http://nalu.readthedocs.io/en/latest/>`_ --- a generalized, unstructured,
+Nalu wind-utils is a companion software library to `Nalu-Wind
+<http://nalu-wind.readthedocs.io/en/latest/>`_ --- a generalized, unstructured,
 massively parallel, low-Mach flow solver for wind energy applications. As the
 name indicates, this software repository provides various meshing, pre- and
 post-processing utilities for use with the Nalu CFD code to aid setup and
@@ -18,14 +18,14 @@ License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_ open-source
 license.
 
 The source code is hosted and all development is coordinated through the `Github
-repository <https://github.com/NaluCFD/NaluWindUtils>`_ under the `NaluCFD
+repository <https://github.com/exawind/wind-utils>`_ under the `Exawind
 organization <https://github.com/NaluCFD>`_ umbrella. The official documentation
 for all released and development versions are hosted on `ReadTheDocs
 <http://naluwindutils.readthedocs.io/en/latest/>`_. Users are welcome to submit
 issues, bugs, or questions via the `issues page
-<https://github.com/NaluCFD/NaluWindUtils/issues>`_. Users are also encouraged
+<https://github.com/exawind/wind-utils/issues>`_. Users are also encouraged
 to contribute to the source code and documentation using `pull requests
-<https://github.com/NaluCFD/NaluWindUtils/pulls>`_ using the normal `Github fork
+<https://github.com/exawind/wind-utils/pulls>`_ using the normal `Github fork
 and pull request workflow <https://guides.github.com/activities/forking/>`_.
 
 This documentation is divided into two parts:
