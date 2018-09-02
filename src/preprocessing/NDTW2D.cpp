@@ -79,8 +79,8 @@ void NDTW2D::initialize()
         stk::topology::NODE_RANK, wall_dist_name_);
 
     for(auto part: fluid_parts_) {
-        stk::mesh::put_field(*coords, *part, ndim_);
-        stk::mesh::put_field(ndtw, *part);
+        stk::mesh::put_field_on_mesh(*coords, *part, ndim_, nullptr);
+        stk::mesh::put_field_on_mesh(ndtw, *part, nullptr);
     }
 
 }

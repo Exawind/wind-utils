@@ -101,9 +101,9 @@ ABLStatistics::initialize()
         stk::topology::NODE_RANK, field_map_["sfs_stress"]);
 
     for (auto* part: fluid_parts_) {
-        stk::mesh::put_field(velocity, *part, ndim_);
-        stk::mesh::put_field(temperature, *part, 1);
-        stk::mesh::put_field(*sfs_stress, *part, ndim_*2);
+        stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
+        stk::mesh::put_field_on_mesh(temperature, *part, 1, nullptr);
+        stk::mesh::put_field_on_mesh(*sfs_stress, *part, ndim_*2, nullptr);
     }
 }
 

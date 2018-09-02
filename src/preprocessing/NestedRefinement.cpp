@@ -160,7 +160,7 @@ NestedRefinement::initialize()
                                      fluidPartNames_[i]);
         else {
             fluidParts_[i] = part;
-            stk::mesh::put_field(refiner, *part, 1);
+            stk::mesh::put_field_on_mesh(refiner, *part, 1, nullptr);
         }
     }
     mesh_.add_output_field(refineFieldName_);

@@ -64,7 +64,7 @@ void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
     // Everyone needs coordinates
     VectorFieldType& coords = meta_.declare_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
-    stk::mesh::put_field(coords, meta_.universal_part(), meta_.spatial_dimension());
+    stk::mesh::put_field_on_mesh(coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
 }
 
 /**

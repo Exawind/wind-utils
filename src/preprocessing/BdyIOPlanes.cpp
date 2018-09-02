@@ -74,7 +74,7 @@ void BdyIOPlanes::initialize()
             bdyName, stk::topology::ELEM_RANK);
         stk::mesh::set_topology(iopart, stk::topology::SHELL_QUAD_4);
         stk::io::put_io_part_attribute(iopart);
-        stk::mesh::put_field(coords, iopart, iometa.spatial_dimension());
+        stk::mesh::put_field_on_mesh(coords, iopart, iometa.spatial_dimension(), nullptr);
     }
 }
 

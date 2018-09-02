@@ -82,7 +82,7 @@ void HexBlockBase::initialize()
 
     VectorFieldType& coords = meta_.declare_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
-    stk::mesh::put_field(coords, meta_.universal_part(), meta_.spatial_dimension());
+    stk::mesh::put_field_on_mesh(coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
 
     // Block mesh part
     {
@@ -94,7 +94,7 @@ void HexBlockBase::initialize()
         if (doPrint)
             std::cout << "\tMesh block: " << blockName_ << std::endl;
 
-        stk::mesh::put_field(coords, part, meta_.spatial_dimension());
+        stk::mesh::put_field_on_mesh(coords, part, meta_.spatial_dimension(), nullptr);
     }
 
     // West

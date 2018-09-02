@@ -152,7 +152,7 @@ void SamplingPlanes::initialize()
 
             VectorFieldType* coords = meta_.get_field<VectorFieldType>(
                 stk::topology::NODE_RANK, "coordinates");
-            stk::mesh::put_field(*coords, part, meta_.spatial_dimension());
+            stk::mesh::put_field_on_mesh(*coords, part, meta_.spatial_dimension(), nullptr);
         }
     }
 }
