@@ -220,35 +220,88 @@ the mesh using Percept. This is used to refine the wind farm simulation mesh
 around the turbines to capture the wakes with the desired resolution while
 performing the ABL simulations with a coarser mesh resolution.
 
+**Example Percept invocation**
+
+.. code-block:: bash
+
+   # Load necessary percept modules ...
+   mpiexec -np ${NPROCS} mesh_adapt --refine=DEFAULT --RAR_info=adapt1.yaml --progress_meter=1 --input_mesh=mesh0.e --output_mesh=mesh1.e --ioss_read_options="auto-decomp:yes" --ioss_write_options="large,auto-join:yes"
+
+.. note::
+
+   #. This utility just creates a field that will be used by *percept* to
+      perform the refinement. The user must execute percept to actually refine
+      the mesh.
+
+   #. The ``mesh_adapt`` utility from Percept must be called once for each level
+      of refinement desired. Each step will use the input file created by the
+      pre-processing utility. However, the mesh files created by percept during
+      the intermediate levels are temporary files used for the next invocation
+      of percept and can be discarded. Only the final mesh file is used with
+      Nalu for wind farm simulations. In the above example increment
+      ``adaptN.yaml`` and ``meshN.e`` for input and output appropriately.
+
+   #. Currently, ``mesh_adapt`` utility requires the meshes to be numbered
+      serially. So it is recommended that the user start with :file:`mesh0.e`
+      and then name the output files :file:`mesh1.e` and so on for each level of
+      refinement.
+
+   #. For the final refinement level the ``auto-join`` option is useful to
+      obtain a single mesh file instead of decomposed files for the number of
+      MPI ranks Percept was invoked on. If you leave out the ``auto-join``
+      option for intermediate levels, make sure you don't provide
+      ``auto-decomp`` option for the next level of refinement.
+
+   #. Percept uses a lot of memory, so make sure that ``mesh_adapt`` is invoked
+      in parallel over a large number of MPI ranks, preferably under subscribing
+      cores on a node.
+
+   #. Always use ``progress_meter`` to see if the job is progressing as
+      expected. ``mesh_adapt`` can hang without warning if it runs out of
+      memory.
+
+   #. Mesh refinement process will create new blocks especially containing tets
+      and pyramids. Make sure these are added to the Nalu-Wind input file. Use
+      ``ncdump -v eb_names`` to see the new parts that were created by the
+      refinement process.
+
+
 .. code-block:: yaml
 
    mesh_local_refinement:
-     fluid_parts: [fluid_part]
+     fluid_parts: [fluid]
      write_percept_files: true
      percept_file_prefix: adapt
      search_tolerance: 11.0
 
-     turbine_diameters: [ 15.0, 15.0 ]
-     turbine_heights: [ 50.0, 50.0 ]
      turbine_locations:
        - [ 200.0, 200.0, 0.0 ]
        - [ 230.0, 300.0, 0.0 ]
+
+     turbine_diameters: 15.0        # Provide a list for variable diameters
+     turbine_heights: 50.0          # Provide a list for variable tower heights
      orientation:
        type: wind_direction
        wind_direction: 225.0
      refinement_levels:
-       - [ 7.0, 12.0, 7.0 ]
-       - [ 5.0, 10.0, 5.0 ]
-       - [ 3.0, 6.0, 3.0]
-       - [ 1.5, 3.0, 1.2]
+       - [ 7.0, 12.0, 7.0, 7.0 ]
+       - [ 5.0, 10.0, 5.0, 5.0 ]
+       - [ 3.0, 6.0, 3.0, 3.0 ]
+       - [ 1.5, 3.0, 1.2, 1.2 ]
 
 .. confval:: turbine_diameters
 
-   A list of turbine diameters for the turbines in the wind farm.
+   A list of turbine diameters for the turbines in the wind farm. If all the
+   turbines in the wind farm have the same rotor, then the input can be a single
+   scalar entry as shown in the example. Otherwise, the list passed must have
+   the same size as the number of entries in ``turbine_locations``.
 
 .. confval:: turbine_heights
 
-   The list of tower heights for the turbines in the wind farm.
+   The list of tower heights for the turbines in the wind farm. If all the
+   turbines in the wind farm have the same tower height, then the input can be a
+   single scalar entry as shown in the example. Otherwise, the list passed must
+   have the same size as the number of entries in ``turbine_locations``.
 
 .. confval:: turbine_locations
 
@@ -263,11 +316,12 @@ performing the ABL simulations with a coarser mesh resolution.
 
 .. confval:: refinement_levels
 
-   A list of 3 parameters for each nested refinement zone. The three parameters
-   are the distance upstream, distance downstream and the lateral distance.
-   These parameters are non-dimensional and are internally scaled by the turbine
-   diameters by the utility. The nested boxes must be specified with the largest
-   box first and the subsequent sizes in descending order.
+   A list of 4 parameters for each nested refinement zone. The three parameters
+   are the distance upstream, distance downstream, the lateral and vertical
+   extents of the refinement zone. These parameters are non-dimensional and are
+   internally scaled by the turbine diameters by the utility. The nested boxes
+   must be specified with the largest box first and the subsequent sizes in
+   descending order.
 
 .. confval:: search_tolerance
 
