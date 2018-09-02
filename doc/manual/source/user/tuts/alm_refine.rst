@@ -142,7 +142,14 @@ is recommended. A sample command line is shown below
 .. code-block:: bash
 
    # Example mesh_adapt invocation in parallel.
-   mpiexec -np 256 mesh_adapt --refine=DEFAULT --input_mesh=mesh0.e --output_mesh=mesh1.e --RAR_info=adapt2.yaml --progress_meter=1 --ioss_read_options="auto-decomp:yes" --ioss_write_options="large,auto-join:yes"
+   mpiexec -np ${NPROCS} mesh_adapt \
+                --refine=DEFAULT \
+                --RAR_info=adapt1.yaml \
+                --progress_meter=1 \
+                --input_mesh=mesh0.e \
+                --output_mesh=mesh1.e \
+                --ioss_read_options="auto-decomp:yes" \
+                --ioss_write_options="large,auto-join:yes"
 
 We pass ``auto-join:yes`` to IOSS write options so that the final mesh is
 combined for subsequent use with a different number of MPI ranks with Nalu.
