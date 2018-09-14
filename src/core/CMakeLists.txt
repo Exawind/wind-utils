@@ -5,7 +5,8 @@ add_library(utilscore
 target_link_libraries(utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_LIBRARIES})
+  ${YAML_CPP_LIBRARIES}
+  ${MPI_LIBRARIES})
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(utilscore PROPERTIES
@@ -18,7 +19,7 @@ if(MPI_LINK_FLAGS)
 endif(MPI_LINK_FLAGS)
 
 install(TARGETS utilscore
-  EXPORT "${CMAKE_PROJECT_NAME}Libraries"
+  EXPORT "${PROJECT_NAME}Libraries"
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)

@@ -10,7 +10,7 @@ target_link_libraries(nalu_postprocess
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
   ${MPI_LIBRARIES})
 
 if(MPI_COMPILE_FLAGS)

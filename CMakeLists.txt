@@ -25,7 +25,7 @@ option(ENABLE_SPHINX_API_DOCS "Enable linking Doxygen API documentation to Sphin
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
-find_package(YAMLCPP REQUIRED)
+find_package(YAML-CPP REQUIRED)
 find_package(OpenMP)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -38,7 +38,7 @@ endif()
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
 include_directories(SYSTEM ${Trilinos_TPL_INCLUDE_DIRS})
-include_directories(SYSTEM ${YAML_INCLUDE_DIRS})
+include_directories(SYSTEM ${YAML_CPP_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (OPENMP_FOUND)
@@ -57,9 +57,9 @@ include(CTest)
 add_subdirectory(tests)
 
 # Install library dependency information
-install(EXPORT ${CMAKE_PROJECT_NAME}Libraries
-  DESTINATION lib/cmake/${CMAKE_PROJECT_NAME}
-  FILE ${CMAKE_PROJECT_NAME}Libraries.cmake)
+install(EXPORT ${PROJECT_NAME}Libraries
+  DESTINATION lib/cmake/${PROJECT_NAME}
+  FILE ${PROJECT_NAME}Libraries.cmake)
 
 # Create NaluWindUtils config so that other codes can find NaluWindUtils
 include(CMakePackageConfigHelpers)
@@ -68,9 +68,9 @@ set(INCLUDE_INSTALL_DIR include/)
 set(LIB_INSTALL_DIR lib/)
 
 configure_package_config_file(
-  cmake/${CMAKE_PROJECT_NAME}.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.cmake
-  INSTALL_DESTINATION lib/cmake/${CMAKE_PROJECT_NAME}
+  cmake/${PROJECT_NAME}.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake
+  INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
   PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.cmake
-  DESTINATION lib/cmake/${CMAKE_PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.cmake
+  DESTINATION lib/cmake/${PROJECT_NAME})
