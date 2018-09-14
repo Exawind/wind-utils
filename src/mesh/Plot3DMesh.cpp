@@ -74,7 +74,8 @@ void Plot3DMesh::parse_p3d_headers()
         skipBytes_ = 20;
     }
 
-    if (intval != ndim * sizeof(int))
+    int expected_size = ndim * sizeof(int);
+    if (intval != expected_size)
       throw std::runtime_error("Plot3DMesh:: Invalid file metadata");
     p3d.read(reinterpret_cast<char *>(meshDims_.data()), intval);
 
