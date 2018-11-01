@@ -16,6 +16,7 @@ Task type                  Description
 ``create_bdy_io_mesh``     Create an I/O transfer mesh for sampling inflow planes
 ``mesh_local_refinement``  Local refinement around turbines for wind farm simulations
 ``rotate_mesh``            Rotate mesh
+``move_mesh``              Translate mesh by a given offset vector
 =========================  ===========================================================
 
 .. warning::
@@ -403,6 +404,33 @@ parallel MPI run.
    A list of boundary parts that are saved in the I/O mesh. The names in the
    list must correspond to the names of the sidesets in the given ABL mesh.
 
+``move_mesh``
+--------------
+
+Translates a mesh in space by a given offset vector.
+
+.. confval:: mesh_parts
+
+   List of element block names that must be translated
+
+.. confval:: offset_vector
+
+   A 3-D vector that specifies the translation in space.
+
+.. code-block:: yaml
+
+   nalu_preprocess:
+     input_db: abl_1x1x1_10.exo
+     output_db: move_mesh.g
+
+     tasks:
+       - move_mesh
+
+     move_mesh:
+       mesh_parts:
+         - fluid
+
+       offset_vector: [10.0, 10.0, 0.0]
 
 ``rotate_mesh``
 ---------------

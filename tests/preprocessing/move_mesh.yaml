@@ -1,0 +1,13 @@
+
+nalu_preprocess:
+  input_db: ../grids/mesh_1x1x1_20.exo
+  output_db: move_mesh.g
+
+  tasks:
+    - move_mesh
+
+  move_mesh:
+    mesh_parts:
+      - fluid_part
+
+    offset_vector: [10.0, 10.0, 0.0]
