@@ -67,6 +67,26 @@ void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
     stk::mesh::put_field_on_mesh(coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
 }
 
+size_t CFDMesh::open_database(std::string output_db)
+{
+    size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
+    for (auto fname: output_fields_ ) {
+        stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
+        if (fld != NULL) {
+            stkio_.add_field(fh, *fld, fname);
+        }
+    }
+
+    return fh;
+}
+
+void CFDMesh::write_database(size_t fh, double time)
+{
+    stkio_.begin_output_step(fh, time);
+    stkio_.write_defined_output_fields(fh);
+    stkio_.end_output_step(fh);
+}
+
 /**
  * \param output_db Filename for the output Exodus database
  * \param time (Optional) time to write (default = 0.0)
@@ -79,16 +99,8 @@ void CFDMesh::write_database
 {
     const std::string timerName("CFDMesh::write_database");
     auto timeMon = get_stopwatch(timerName);
-    size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
-    for (auto fname: output_fields_ ) {
-        stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
-        if (fld != NULL) {
-            stkio_.add_field(fh, *fld, fname);
-        }
-    }
-    stkio_.begin_output_step(fh, time);
-    stkio_.write_defined_output_fields(fh);
-    stkio_.end_output_step(fh);
+    size_t fh = open_database(output_db);
+    write_database(fh, time);
 }
 
 /**

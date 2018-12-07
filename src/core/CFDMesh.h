@@ -92,6 +92,24 @@ public:
         output_fields_.insert(field);
     }
 
+    /** Open a database for writing time series data
+     *
+     *  \param output_db Pathname to the output ExodusII database
+     *  \return A valid file handle for use with write_database
+     *
+     *  \sa write_database, write_timesteps
+     */
+    size_t open_database(std::string output_db);
+
+    /** Write time series data to an open database
+     *
+     *  \param fh Valid file handle
+     *  \param time Time to write
+     *
+     *  \sa open_database, write_timesteps
+     */
+    void write_database(size_t fh, double time);
+
     /** Write the Exodus results database with modifications
      *
      *  \param output_db Pathname to the output ExodusII database
@@ -109,6 +127,40 @@ public:
      *  \param output_db Pathname to the output ExodusII database
      */
     void write_database_with_fields(std::string output_db);
+
+    /** Write time-history to database
+     *
+     *  This method accepts a functor that takes one integer argument (timestep)
+     *  and returns the time (double) that must be written to the database. The
+     *  functor should update the fields that are being written to the database.
+     *  An example would be to simulate mesh motion by updating the
+     *  mesh_displacement field at every timestep.
+     *
+     * The following example shows the use with a C++ lambda function:
+     *
+     *  ```
+     *  double deltaT = 0.01;  // Timestep size
+     *
+     *  write_timesteps("inflow_history.exo", 100,
+     *    [&](int tstep) {
+     *        double time = tstep * deltaT;
+     *
+     *        // Update velocity and coordinates
+     *
+     *        return time;
+     *  });
+     *  ```
+     */
+    template<typename Functor>
+    void write_timesteps(std::string output_db, int num_steps, Functor lambdaFunc)
+    {
+        size_t fh = open_database(output_db);
+
+        for (int tstep=0; tstep < num_steps; tstep++) {
+            double time = lambdaFunc(tstep);
+            write_database(fh, time);
+        }
+    }
 
     /** Calculate the bounding box of the mesh
      *
@@ -150,10 +202,14 @@ public:
     }
 
     //! Force output of the results DB
-    inline void set_write_flag()
+    inline void set_write_flag(bool flag = true)
     {
-        db_modified_ = true;
+        db_modified_ = flag;
     }
+
+    //! Return a reference to the registered output fields
+    inline const std::unordered_set<std::string>& output_fields()
+    { return output_fields_; }
 
 private:
     CFDMesh() = delete;
