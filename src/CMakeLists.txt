@@ -15,6 +15,7 @@ add_subdirectory(core)
 add_subdirectory(preprocessing)
 add_subdirectory(postprocessing)
 add_subdirectory(mesh)
+add_subdirectory(tools)
 
 if (ENABLE_WRFTONALU)
   add_subdirectory(wrftonalu)
