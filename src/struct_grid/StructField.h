@@ -24,6 +24,12 @@
 namespace sierra {
 namespace nalu {
 
+/** A field defined on a structured grid
+ *
+ *  Requires two template arguments:
+ *    - the datatype (e.g., double)
+ *    - (i, j, k) indexer type
+ */
 template<typename T, typename Indexer>
 class StructBoxField
 {
@@ -55,6 +61,10 @@ public:
     {
         return field_[idx];
     }
+
+    inline T* data() { return field_.data(); }
+
+    inline const T* data() const { return field_.data(); }
 
 private:
     const StructBox bx_;

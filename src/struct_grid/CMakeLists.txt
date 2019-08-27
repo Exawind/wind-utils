@@ -1,9 +1,21 @@
 
-add_library(struct_grid
-  StructGrid.cpp)
+set(STRUCT_GRID_SOURCES
+  StructGrid.cpp
+  )
+
+if (HYPRE_FOUND)
+  list(APPEND STRUCT_GRID_SOURCES
+    HypreStructSolver.cpp)
+endif()
+
+add_library(struct_grid ${STRUCT_GRID_SOURCES})
 
 target_link_libraries(struct_grid
   ${MPI_LIBARIES})
+
+if (HYPRE_FOUND)
+  target_link_libraries(struct_grid ${HYPRE_LIBRARIES})
+endif()
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(struct_grid PROPERTIES

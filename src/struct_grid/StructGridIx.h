@@ -27,6 +27,7 @@ namespace sgix {
 struct LeftLayout {};
 struct RightLayout {};
 
+//! The total number of cells in a given box
 inline SGTraits::size_t
 num_cells(const StructBox& box)
 {
@@ -37,6 +38,10 @@ num_cells(const StructBox& box)
     return counter;
 }
 
+/** Grow a struct box by adding the prescribed number of ghost cells in each direction
+ *
+ *  @return A box instance with ghost cell layers
+ */
 inline StructBox
 grow_box(
     const StructBox& box,
@@ -57,12 +62,19 @@ grow_box(
     return box1;
 }
 
+//! Grow a struct box by adding the given number of ghost cells in each direction
 inline StructBox
 grow_box(const StructBox& box, SGTraits::idx_t nghost = 1)
 {
     return grow_box(box, nghost, nghost, nghost);
 }
 
+//! Return a box that contains the true DOFs of a box
+//!
+//! This removes the ghost cell layers (if present) in the input box
+//!
+//! @return Box without any ghost cells
+//!
 inline StructBox
 real_box(const StructBox& box)
 {
@@ -77,6 +89,10 @@ real_box(const StructBox& box)
     return box1;
 }
 
+/** Convert (i, j, k) index into memory offset for array lookups
+ *
+ *  Depending on the layout, computes the memory offset for field lookups
+ */
 template<typename Layout = LeftLayout>
 class Indexer
 {
@@ -109,6 +125,11 @@ private:
     const StructBox& bx;
 };
 
+/** Converts (i, j, k) index into memory offsets for array lookups
+ *
+ *  Unlike the default Indexer, this class will interpret out of bounds indices
+ *  as periodic and loop around the right direction to generate memory offsets.
+ */
 template<typename Layout = LeftLayout>
 class PeriodicIndexer
 {
@@ -160,6 +181,8 @@ private:
     const StructBox& bx;
 };
 
+/** Convenience method to perform a LeftLayout loop for a given box
+ */
 template <typename LambdaFunction>
 void
 ijk_loop(const StructBox& box, LambdaFunction func)
@@ -171,6 +194,8 @@ ijk_loop(const StructBox& box, LambdaFunction func)
                 func(i, j, k);
 }
 
+/** Convenience method to perform a RightLayout loop for a given box
+ */
 template <typename LambdaFunction>
 void
 kji_loop(const StructBox& box, LambdaFunction func)
