@@ -12,6 +12,7 @@
 #
 
 add_subdirectory(core)
+add_subdirectory(struct_grid)
 add_subdirectory(preprocessing)
 add_subdirectory(postprocessing)
 add_subdirectory(mesh)
