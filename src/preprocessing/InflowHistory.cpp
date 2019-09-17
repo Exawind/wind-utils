@@ -73,6 +73,7 @@ void InflowHistory::initialize()
         stk::mesh::put_field_on_mesh(
             velocity, *part, meta.spatial_dimension(), nullptr);
     }
+    mesh_.add_output_field("velocity");
 }
 
 void InflowHistory::run()
