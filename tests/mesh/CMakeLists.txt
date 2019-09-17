@@ -10,3 +10,7 @@ mesh_test(abl_mesh_bbox)
 mesh_test(abl_mesh_vertices)
 mesh_test(channel_mesh)
 mesh_test(plot3d_to_exo)
+add_test(
+  slice_mesh
+  ${CMAKE_BINARY_DIR}/src/mesh/slice_mesh
+  -i ${CMAKE_CURRENT_SOURCE_DIR}/slice_mesh.yaml)

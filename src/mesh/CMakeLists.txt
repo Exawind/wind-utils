@@ -26,7 +26,19 @@ add_executable(abl_mesh
   Plot3DMesh.cpp
   abl_mesh.cpp)
 
+add_executable(slice_mesh
+  Slice.cpp
+  slice_mesh.cpp
+  )
+
 target_link_libraries(abl_mesh
+  utilscore
+  ${Trilinos_TPL_LIBRARIES}
+  ${Trilinos_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+  ${MPI_LIBRARIES})
+
+target_link_libraries(slice_mesh
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
@@ -40,6 +52,16 @@ endif(MPI_COMPILE_FLAGS)
 
 if(MPI_LINK_FLAGS)
   set_target_properties(abl_mesh PROPERTIES
+    LINK_FLAGS "${MPI_LINK_FLAGS}")
+endif(MPI_LINK_FLAGS)
+
+if(MPI_COMPILE_FLAGS)
+  set_target_properties(slice_mesh PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif(MPI_COMPILE_FLAGS)
+
+if(MPI_LINK_FLAGS)
+  set_target_properties(slice_mesh PROPERTIES
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif(MPI_LINK_FLAGS)
 

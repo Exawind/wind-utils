@@ -1,0 +1,22 @@
+
+slice_mesh:
+  output_db: sampling_planes.exo
+
+  slices:
+    - axis1: [0.0, 1.0, 0.0]
+      axis3: [1.0, 0.0, 0.0]
+      origin: [0.0, 0.0, 0.0]
+      grid_lengths: [100.0, 100.0]
+      grid_dx: [10.0, 10.0]
+      num_planes: 2
+      plane_offsets: [0.0, 10.0]
+      part_name_prefix: turbine1
+
+    - axis1: [0.0, 1.0, 0.0]
+      axis3: [1.0, 0.0, 0.0]
+      origin: [100.0, 150.0, 0.0]
+      grid_lengths: [100.0, 100.0]
+      grid_dx: [10.0, 10.0]
+      num_planes: 2
+      plane_offsets: [0.0, 10.0]
+      part_name_prefix: turbine2
