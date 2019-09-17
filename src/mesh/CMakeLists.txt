@@ -71,7 +71,7 @@ endif(MPI_LINK_FLAGS)
 #  LIBRARY DESTINATION lib
 #  ARCHIVE DESTINATION lib)
 
-install(TARGETS abl_mesh
+install(TARGETS abl_mesh slice_mesh
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
