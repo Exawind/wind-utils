@@ -20,6 +20,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 
 namespace sierra {
 namespace nalu {
