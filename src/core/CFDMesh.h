@@ -151,15 +151,31 @@ public:
      *  });
      *  ```
      */
-    template<typename Functor>
-    void write_timesteps(std::string output_db, int num_steps, Functor lambdaFunc)
+    template <typename Functor, typename FieldSetType>
+    void write_timesteps(
+        std::string output_db,
+        int num_steps,
+        const FieldSetType& field_list,
+        Functor lambdaFunc)
     {
-        size_t fh = open_database(output_db);
+        size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
+        for (auto fname: field_list) {
+            stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
+            if (fld != nullptr) {
+                stkio_.add_field(fh, *fld, fname);
+            }
+        }
 
         for (int tstep=0; tstep < num_steps; tstep++) {
             double time = lambdaFunc(tstep);
             write_database(fh, time);
         }
+    }
+
+    template<typename Functor>
+    void write_timesteps(std::string output_db, int num_steps, Functor lambdaFunc)
+    {
+        write_timesteps(output_db, num_steps, output_fields_, lambdaFunc);
     }
 
     /** Calculate the bounding box of the mesh

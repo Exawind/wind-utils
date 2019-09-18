@@ -18,6 +18,7 @@
 #include "core/YamlUtils.h"
 #include "core/KokkosWrappers.h"
 #include "core/PerfUtils.h"
+#include "core/ParallelInfo.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -73,7 +74,6 @@ void InflowHistory::initialize()
         stk::mesh::put_field_on_mesh(
             velocity, *part, meta.spatial_dimension(), nullptr);
     }
-    mesh_.add_output_field("velocity");
 }
 
 void InflowHistory::run()
@@ -81,6 +81,7 @@ void InflowHistory::run()
     const std::string timerName = "InflowHistory::run";
     auto timeMon = get_stopwatch(timerName);
 
+    auto& pinfo = get_mpi();
     auto& meta = mesh_.meta();
     auto& bulk = mesh_.bulk();
     const int nDim = meta.spatial_dimension();
@@ -96,9 +97,11 @@ void InflowHistory::run()
     auto* velocity = meta.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "velocity");
 
+    pinfo.info() << "Writing time-history file = " << output_db_ << std::endl;
+    std::set<std::string> outfields{"velocity"};
     double time, uvel, vvel, wvel;
     mesh_.write_timesteps(
-        output_db_, numSteps_,
+        output_db_, numSteps_, outfields,
         [&](int tstep) {
             inflow >> time >> uvel >> vvel >> wvel;
 
@@ -112,6 +115,7 @@ void InflowHistory::run()
             }
             return time;
         });
+    pinfo.info() << numSteps_ << " timesteps written successfully" << std::endl;
 }
 
 }  // nalu
