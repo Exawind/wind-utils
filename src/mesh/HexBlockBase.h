@@ -83,15 +83,15 @@ protected:
     virtual void generate_elements();
 
     //! Generate the xmin and xmax sidesets
-    virtual void generate_x_boundary(const std::vector<stk::mesh::EntityId> &,
+    virtual void generate_x_boundary(const std::vector<stk::mesh::Entity> &,
                                      const SideIDType);
 
     //! Generate the ymin and ymax sidesets
-    virtual void generate_y_boundary(const std::vector<stk::mesh::EntityId> &,
+    virtual void generate_y_boundary(const std::vector<stk::mesh::Entity> &,
                                      const SideIDType);
 
     //! Generate the zmin and zmax sidesets
-    virtual void generate_z_boundary(const std::vector<stk::mesh::EntityId> &,
+    virtual void generate_z_boundary(const std::vector<stk::mesh::Entity> &,
                                      const SideIDType);
     //! Generate coordinates
     virtual void generate_coordinates(const std::vector<stk::mesh::EntityId>&) = 0;
