@@ -203,6 +203,15 @@ public:
         stkio_.property_add(Ioss::Property("DECOMPOSITION_METHOD", decompType));
     }
 
+    /** Join output/restart files when writing to disk
+     *
+     */
+    inline void set_auto_join()
+    {
+        stkio_.property_add(Ioss::Property("COMPOSE_RESULTS", "YES"));
+        stkio_.property_add(Ioss::Property("COMPOSE_RESTART", "YES"));
+    }
+
     /** Force output database to use 8-bit integers
      */
     inline void set_64bit_flags()
