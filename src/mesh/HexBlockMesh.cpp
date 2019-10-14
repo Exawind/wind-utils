@@ -16,6 +16,7 @@
 #include "HexBlockMesh.h"
 #include "core/YamlUtils.h"
 #include "core/PerfUtils.h"
+#include "core/ParallelInfo.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -100,6 +101,10 @@ HexBlockMesh::~HexBlockMesh()
 void HexBlockMesh::load(const YAML::Node& node)
 {
     using namespace sierra::nalu::wind_utils;
+    using idx_t = SGTraits::idx_t;
+
+    const auto& pinfo = get_mpi();
+
     HexBlockBase::load(node);
 
     if (node["spec_type"]) {
@@ -130,7 +135,22 @@ void HexBlockMesh::load(const YAML::Node& node)
             throw std::runtime_error("HexBlockMesh: Inconsistent coordinates provided");
     }
 
-    meshDims_ = node["mesh_dimensions"].as<std::vector<int>>();
+    auto meshDims = node["mesh_dimensions"].as<std::vector<int>>();
+    ThrowRequire(meshDims.size() == SGTraits::ndim);
+    elemGrid_.set_global_grid(meshDims[0], meshDims[1], meshDims[2]);
+    elemGrid_.set_partitions(1, 1, pinfo.size());
+
+    // Set the dimensions of the local block
+    const auto& local = elemGrid_.local();
+    nodeBlock_ = local;
+    meshDims_.resize(SGTraits::ndim);
+    for (int i=0; i < SGTraits::ndim; ++i) {
+        meshDims_[i] = local.size[i];
+
+        // Increment node block to include end points
+        nodeBlock_.size[i]++;
+        nodeBlock_.end[i]++;
+    }
 
     // Process mesh spacing inputs
 
@@ -138,32 +158,33 @@ void HexBlockMesh::load(const YAML::Node& node)
         auto& xsnode = node["x_spacing"];
         get_optional(xsnode, "spacing_type", xspacing_type_);
 
-        xSpacing_.reset(MeshSpacing::create(meshDims_[0]+1, xsnode, xspacing_type_));
+        xSpacing_.reset(MeshSpacing::create(meshDims[0]+1, xsnode, xspacing_type_));
     } else {
-        xSpacing_.reset(MeshSpacing::create(meshDims_[0]+1, node, xspacing_type_));
+        xSpacing_.reset(MeshSpacing::create(meshDims[0]+1, node, xspacing_type_));
     }
 
     if (node["y_spacing"]) {
         auto& ysnode = node["y_spacing"];
         get_optional(ysnode, "spacing_type", yspacing_type_);
 
-        ySpacing_.reset(MeshSpacing::create(meshDims_[1]+1, ysnode, yspacing_type_));
+        ySpacing_.reset(MeshSpacing::create(meshDims[1]+1, ysnode, yspacing_type_));
     } else {
-        ySpacing_.reset(MeshSpacing::create(meshDims_[1]+1, node, yspacing_type_));
+        ySpacing_.reset(MeshSpacing::create(meshDims[1]+1, node, yspacing_type_));
     }
 
     if (node["z_spacing"]) {
         auto& zsnode = node["z_spacing"];
         get_optional(zsnode, "spacing_type", zspacing_type_);
 
-        zSpacing_.reset(MeshSpacing::create(meshDims_[2]+1, zsnode, zspacing_type_));
+        zSpacing_.reset(MeshSpacing::create(meshDims[2]+1, zsnode, zspacing_type_));
     } else {
-        zSpacing_.reset(MeshSpacing::create(meshDims_[2]+1, node, zspacing_type_));
+        zSpacing_.reset(MeshSpacing::create(meshDims[2]+1, node, zspacing_type_));
     }
 }
 
 void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& nodeVec)
 {
+    const auto& pinfo = get_mpi();
     const std::string timerName("HexBlockMesh::generate_coordinates");
     auto timeMon = get_stopwatch(timerName);
     int nx = meshDims_[0] + 1;
@@ -173,23 +194,24 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
-    std::cout << "\t Generating x spacing: " << xspacing_type_ << std::endl;
+    pinfo.info() << "\t Generating x spacing: " << xspacing_type_ << std::endl;
     xSpacing_->init_spacings();
-    std::cout << "\t Generating y spacing: " << yspacing_type_ <<  std::endl;
+    pinfo.info() << "\t Generating y spacing: " << yspacing_type_ <<  std::endl;
     ySpacing_->init_spacings();
-    std::cout << "\t Generating z spacing: " << zspacing_type_ << std::endl;
+    pinfo.info() << "\t Generating z spacing: " << zspacing_type_ << std::endl;
     zSpacing_->init_spacings();
 
     auto& rxvec = xSpacing_->ratios();
     auto& ryvec = ySpacing_->ratios();
     auto& rzvec = zSpacing_->ratios();
 
+    const int* start = nodeBlock_.start;
     for (int k=0; k < nz; k++) {
-        double rz = rzvec[k];
+        double rz = rzvec[k + start[2]];
         for (int j=0; j < ny; j++) {
-            double ry = ryvec[j];
+            double ry = ryvec[j + start[1]];
             for (int i=0; i < nx; i++) {
-                double rx = rxvec[i];
+                double rx = rxvec[i + start[0]];
                 int idx = k * (nx * ny) + j * nx + i;
                 auto node = bulk_.get_entity(stk::topology::NODE_RANK, nodeVec[idx]);
                 double* pt = stk::mesh::field_data(*coords, node);

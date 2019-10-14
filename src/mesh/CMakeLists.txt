@@ -32,6 +32,7 @@ add_executable(slice_mesh
   )
 
 target_link_libraries(abl_mesh
+  struct_grid
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}

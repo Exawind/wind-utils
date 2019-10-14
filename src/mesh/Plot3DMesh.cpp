@@ -15,6 +15,7 @@
 
 #include "Plot3DMesh.h"
 #include "core/PerfUtils.h"
+#include "core/ParallelInfo.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -32,6 +33,9 @@ Plot3DMesh::Plot3DMesh(
     const YAML::Node& node
 ) : HexBlockBase(mesh)
 {
+    if (get_mpi().size() > 1)
+        throw std::runtime_error("Plot3DMesh does not support MPI runs");
+
     load(node);
 }
 
@@ -87,6 +91,8 @@ void Plot3DMesh::parse_p3d_headers()
     for (int d=0; d < ndim; d++)
         meshDims_[d]--;
 
+    elemGrid_.set_global_grid(meshDims_[0], meshDims_[1], meshDims_[2]);
+    elemGrid_.set_partitions(1, 1, 1);
     p3d.close();
 }
 

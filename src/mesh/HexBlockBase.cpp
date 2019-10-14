@@ -18,6 +18,7 @@
 #include "HexBlockBase.h"
 #include "core/PerfUtils.h"
 #include "core/ParallelInfo.h"
+#include "struct_grid/StructGridIx.h"
 
 #include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
@@ -145,6 +146,8 @@ void HexBlockBase::run()
     const std::string timerName("HexBlockBase::run");
     auto timeMon = get_stopwatch(timerName);
     generate_elements();
+
+    stk::parallel_machine_barrier(get_mpi().comm());
 }
 
 void HexBlockBase::generate_elements()
@@ -154,15 +157,20 @@ void HexBlockBase::generate_elements()
     stk::mesh::Part* part = (meta_.get_part(blockName_));
     stk::mesh::PartVector meshParts{part};
 
+    const auto& global = elemGrid_.global();
+    const auto numGlobalElems = sgix::num_cells(global);
+    const int* gsize = global.size;
+    SGTraits::size_t numGlobalNodes = 1;
     unsigned numNodes = 1;
     unsigned numElems = 1;
     for (int i=0; i<3; i++) {
         numNodes *= (meshDims_[i] + 1);
         numElems *= meshDims_[i];
+        numGlobalNodes *= (gsize[i] + 1);
     }
 
-    pinfo.info() << "Num. nodes = " << numNodes << "; Num elements = "
-                 << numElems << std::endl;
+    pinfo.info() << "Num. nodes = " << numGlobalNodes << "; Num elements = "
+                 << numGlobalElems << std::endl;
 
     std::vector<stk::mesh::EntityId> nodeIDs(numNodes), elemIDs(numElems);
     stk::mesh::EntityVector nodes, elems;
@@ -183,9 +191,19 @@ void HexBlockBase::generate_elements()
             const std::string timerName("HexBlockBase::create_nodes");
             auto timeMon = get_stopwatch(timerName);
 
-            std::iota(nodeIDs.begin(), nodeIDs.end(), 1);
+            stk::mesh::EntityId start =
+                nodeIDStart_ + nodeBlock_.start[2] * nodeBlock_.size[0] * nodeBlock_.size[1];
+            std::iota(nodeIDs.begin(), nodeIDs.end(), start);
             bulk_.declare_entities(
                 stk::topology::NODE_RANK, nodeIDs, meshParts, nodes);
+
+            if (pinfo.size() > 1) {
+                if (pinfo.rank() > 0)
+                    add_node_sharing(nodes, 0, pinfo.rank() - 1);
+                if (pinfo.rank() < (pinfo.size() - 1))
+                    add_node_sharing(
+                        nodes, (nodeBlock_.size[2] - 1), (pinfo.rank() + 1));
+            }
             pinfo.info() << "done" << std::endl;
         }
 
@@ -193,7 +211,10 @@ void HexBlockBase::generate_elements()
             const std::string timerName("HexBlockBase::create_elements");
             auto timeMon = get_stopwatch(timerName);
             pinfo.info() << "\tGenerating elements..." << std::flush;
-            std::iota(elemIDs.begin(), elemIDs.end(), 1);
+            const auto& local = elemGrid_.local();
+            stk::mesh::EntityId start =
+                elemIDStart_ + local.start[2] * local.size[0] * local.size[1];
+            std::iota(elemIDs.begin(), elemIDs.end(), start);
             bulk_.declare_entities(
                 stk::topology::ELEM_RANK, elemIDs, meshParts, elems);
             pinfo.info() << "done" << std::endl;
@@ -230,15 +251,10 @@ void HexBlockBase::generate_elements()
                             bulk_.declare_relation(
                                 elems[idx], nodes[nids[ni]], ni, perm, scratch1,
                                 scratch2, scratch3);
-
-                        if (marker <= (idx * 10 / numElems)) {
-                            pinfo.info() << marker * 10 << "% " << std::flush;
-                            marker++;
-                        }
                     }
                 }
             }
-            pinfo.info() << std::endl;
+            pinfo.info() << "done" << std::endl;
         }
 
         {
@@ -254,7 +270,9 @@ void HexBlockBase::generate_elements()
             }
         }
     }
+    pinfo.info() << "\tFinalizing bulk data modifications ... " << std::flush;
     bulk_.modification_end();
+    pinfo.info() << "done" << std::endl;
 
     elemIDs.clear();
     nodes.clear();
@@ -316,6 +334,11 @@ void HexBlockBase::generate_z_boundary(
     const std::vector<stk::mesh::Entity>& elemVec,
     const SideIDType id)
 {
+    const auto& pinfo = get_mpi();
+    if (!(((id == ZMIN) && (pinfo.rank() == 0)) ||
+          ((id == ZMAX) && (pinfo.rank() == (pinfo.size() - 1)))))
+        return;
+
     int mx = meshDims_[0];
     int my = meshDims_[1];
 
@@ -323,7 +346,7 @@ void HexBlockBase::generate_z_boundary(
     std::string ssname;
     int iz = 0;
     get_sideset_info(id, iz, ssname, sideOrd);
-    get_mpi().info() << "\tGenerating Z Sideset: " << ssname << std::endl;
+    pinfo.info() << "\tGenerating Z Sideset: " << ssname << std::endl;
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
 
@@ -333,6 +356,24 @@ void HexBlockBase::generate_z_boundary(
             bulk_.declare_element_side(elemVec[idx], sideOrd, partVec);
         }
     }
+}
+
+void
+HexBlockBase::add_node_sharing(
+    const std::vector<stk::mesh::Entity>& nodes,
+    const unsigned zindex,
+    const int otherProc)
+{
+    const unsigned nx = meshDims_[0] + 1;
+    const unsigned ny = meshDims_[1] + 1;
+    const unsigned offset = zindex * nx * ny;
+
+    unsigned idx = 0;
+    for (unsigned j=0; j < ny; ++j)
+        for (unsigned i = 0; i < nx; ++i) {
+            bulk_.add_node_sharing(nodes[offset + idx], otherProc);
+            idx++;
+        }
 }
 
 void
