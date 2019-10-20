@@ -31,7 +31,7 @@ a **nalu_preprocess** section as shown below. Input options for the individual
 tasks are provided as sub-sections within **nalu_preprocess** with the
 corresponding task names provided under ``tasks``. For example, in the sample
 shown below, the program will expect to see two sub-sections, namely
-``init_abl_fields`` and ``generate_planes`` based on the list of tasks shown in
+``init_abl_fields`` and ``rotate_mesh`` based on the list of tasks shown in
 lines 22-23.
 
 .. literalinclude:: files/nalu_preprocess.yaml
@@ -99,7 +99,7 @@ Common input file options
 
       tasks:
         - rotate_mesh_ccw  # Rotate mesh such that sides align with XYZ axes
-        - generate_planes  # Generate sampling planes using bounding box
+        - move_mesh
         - rotate_mesh_cw   # Rotate mesh back to the original orientation
 
       rotate_mesh_ccw:
@@ -110,6 +110,12 @@ Common input file options
         angle: 30.0
         origin: [500.0, 0.0, 0.0]
         axis: [0.0, 0.0, 1.0]
+
+      move_mesh:
+        mesh_parts:
+          - fluid_part
+
+        offset_vector: [10.0, 10.0, 0.0]
 
       rotate_mesh_cw:
         task_type: rotate_mesh

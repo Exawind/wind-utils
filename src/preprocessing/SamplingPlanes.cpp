@@ -45,7 +45,7 @@
 namespace sierra {
 namespace nalu {
 
-REGISTER_DERIVED_CLASS(PreProcessingTask, SamplingPlanes, "generate_planes");
+REGISTER_DERIVED_CLASS(PreProcessingTask, SamplingPlanes, "generate_planes_deprecated");
 
 SamplingPlanes::SamplingPlanes(
     CFDMesh& mesh,

@@ -20,7 +20,7 @@ nalu_preprocess:
   # field data structures
   tasks:
     - init_abl_fields
-    - generate_planes
+    - rotate_mesh_ccw
 
   # Inputs for each "task" is organized under the section corresponding to the
   # task name
