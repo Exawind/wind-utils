@@ -213,6 +213,7 @@ void HexBlockBase::generate_elements()
                         nodes, (nodeBlock_.size[2] - 1), (pinfo.rank() + 1));
             }
             pinfo.info() << "done" << std::endl;
+            stk::parallel_machine_barrier(pinfo.comm());
         }
 
         {
@@ -269,6 +270,7 @@ void HexBlockBase::generate_elements()
                 }
             }
             pinfo.info() << "done" << std::endl;
+            stk::parallel_machine_barrier(pinfo.comm());
         }
 
         {
@@ -281,9 +283,11 @@ void HexBlockBase::generate_elements()
                 generate_y_boundary(elems, YMAX);
                 generate_z_boundary(elems, ZMIN);
                 generate_z_boundary(elems, ZMAX);
+                stk::parallel_machine_barrier(pinfo.comm());
             }
         }
     }
+    stk::parallel_machine_barrier(pinfo.comm());
     pinfo.info() << "\tFinalizing bulk data modifications ... " << std::flush;
     bulk_.modification_end();
     pinfo.info() << "done" << std::endl;
@@ -294,6 +298,7 @@ void HexBlockBase::generate_elements()
 
     pinfo.info() << "\tGenerating coordinates..." << std::endl;
     generate_coordinates(nodeIDs);
+    stk::parallel_machine_barrier(pinfo.comm());
 }
 
 void HexBlockBase::generate_x_boundary(
