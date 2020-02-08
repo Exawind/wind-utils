@@ -4,9 +4,9 @@ nalu_preprocess:
   output_db: generate_planes.g
 
   tasks:
-    - generate_planes
+    - generate_planes_deprecated
 
-  generate_planes:
+  generate_planes_deprecated:
     fluid_part: fluid_part
     heights: [45.0, 90.0]
     part_name_format: "zplane_%06.1f"
