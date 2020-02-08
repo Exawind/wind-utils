@@ -152,21 +152,23 @@ void HexBlockBase::run()
 
 void HexBlockBase::generate_elements()
 {
+    using EntID = stk::mesh::EntityId;
     const auto& pinfo = get_mpi();
 
     stk::mesh::Part* part = (meta_.get_part(blockName_));
     stk::mesh::PartVector meshParts{part};
 
     const auto& global = elemGrid_.global();
-    const auto numGlobalElems = sgix::num_cells(global);
     const int* gsize = global.size;
-    SGTraits::size_t numGlobalNodes = 1;
-    unsigned numNodes = 1;
-    unsigned numElems = 1;
+    EntID numGlobalElems = 1;
+    EntID numGlobalNodes = 1;
+    EntID numNodes = 1;
+    EntID numElems = 1;
     for (int i=0; i<3; i++) {
-        numNodes *= (meshDims_[i] + 1);
-        numElems *= meshDims_[i];
-        numGlobalNodes *= (gsize[i] + 1);
+        numNodes *= static_cast<EntID>(meshDims_[i] + 1);
+        numElems *= static_cast<EntID>(meshDims_[i]);
+        numGlobalNodes *= static_cast<EntID>(gsize[i] + 1);
+        numGlobalElems *= static_cast<EntID>(gsize[i]);
     }
 
     pinfo.info() << "Num. nodes = " << numGlobalNodes << "; Num elements = "
@@ -177,13 +179,13 @@ void HexBlockBase::generate_elements()
     nodes.reserve(numNodes);
     elems.reserve(numElems);
 
-    int mx = meshDims_[0];
-    int my = meshDims_[1];
-    int mz = meshDims_[2];
-    int nx = meshDims_[0] + 1;
-    int ny = meshDims_[1] + 1;
+    EntID mx = meshDims_[0];
+    EntID my = meshDims_[1];
+    EntID mz = meshDims_[2];
+    EntID nx = meshDims_[0] + 1;
+    EntID ny = meshDims_[1] + 1;
 
-    std::vector<size_t> nids(8);
+    std::vector<stk::mesh::EntityId> nids(8);
     bulk_.modification_begin("Adding mesh nodes");
     {
         {
@@ -191,9 +193,15 @@ void HexBlockBase::generate_elements()
             const std::string timerName("HexBlockBase::create_nodes");
             auto timeMon = get_stopwatch(timerName);
 
-            stk::mesh::EntityId start =
-                nodeIDStart_ + nodeBlock_.start[2] * nodeBlock_.size[0] * nodeBlock_.size[1];
+            const EntID start =
+                nodeIDStart_ + (
+                    static_cast<EntID>(nodeBlock_.start[2]) *
+                    static_cast<EntID>(nodeBlock_.size[0]) *
+                    static_cast<EntID>(nodeBlock_.size[1]));
             std::iota(nodeIDs.begin(), nodeIDs.end(), start);
+            ThrowRequire(nodeIDs[0] == start);
+            ThrowRequire(nodeIDs[0] < numGlobalNodes);
+            ThrowRequire(nodeIDs[numNodes - 1] <= numGlobalNodes);
             bulk_.declare_entities(
                 stk::topology::NODE_RANK, nodeIDs, meshParts, nodes);
 
@@ -212,9 +220,15 @@ void HexBlockBase::generate_elements()
             auto timeMon = get_stopwatch(timerName);
             pinfo.info() << "\tGenerating elements..." << std::flush;
             const auto& local = elemGrid_.local();
-            stk::mesh::EntityId start =
-                elemIDStart_ + local.start[2] * local.size[0] * local.size[1];
+            const EntID start =
+                elemIDStart_ + (
+                    static_cast<EntID>(local.start[2]) *
+                    static_cast<EntID>(local.size[0]) *
+                    static_cast<EntID>(local.size[1]));
             std::iota(elemIDs.begin(), elemIDs.end(), start);
+            ThrowRequire(elemIDs[0] == start);
+            ThrowRequire(elemIDs[0] < numGlobalElems);
+            ThrowRequire(elemIDs[numElems - 1] <= numGlobalElems);
             bulk_.declare_entities(
                 stk::topology::ELEM_RANK, elemIDs, meshParts, elems);
             pinfo.info() << "done" << std::endl;
@@ -228,14 +242,14 @@ void HexBlockBase::generate_elements()
 
             pinfo.info() << "\tCreating element connectivity... " << std::flush;
             unsigned marker = 1;
-            int idx;
-            for (int k=0; k < mz; k++) {
-                int ik = k * (nx * ny);
-                int ikp1 = (k+1) * (nx * ny);
-                for (int j=0; j < my; j++) {
-                    int ij = j * nx;
-                    int ijp1 = (j+1) * nx;
-                    for (int i=0; i < mx; i++) {
+            EntID idx;
+            for (EntID k=0; k < mz; k++) {
+                EntID ik = k * (nx * ny);
+                EntID ikp1 = (k+1) * (nx * ny);
+                for (EntID j=0; j < my; j++) {
+                    EntID ij = j * nx;
+                    EntID ijp1 = (j+1) * nx;
+                    for (EntID i=0; i < mx; i++) {
                         idx = k*(mx*my) + j*mx + i;
                         nids[0] = ik + ij + i;
                         nids[1] = ik + ij + i + 1;
@@ -247,7 +261,7 @@ void HexBlockBase::generate_elements()
                         nids[6] = ikp1 + ijp1 + i + 1;
                         nids[7] = ikp1 + ijp1 + i;
 
-                        for (int ni=0; ni < 8; ++ni)
+                        for (EntID ni=0; ni < 8; ++ni)
                             bulk_.declare_relation(
                                 elems[idx], nodes[nids[ni]], ni, perm, scratch1,
                                 scratch2, scratch3);
@@ -286,9 +300,10 @@ void HexBlockBase::generate_x_boundary(
     const std::vector<stk::mesh::Entity>& elemVec,
     const SideIDType id)
 {
-    int mx = meshDims_[0];
-    int my = meshDims_[1];
-    int mz = meshDims_[2];
+    using EntID = stk::mesh::EntityId;
+    EntID mx = meshDims_[0];
+    EntID my = meshDims_[1];
+    EntID mz = meshDims_[2];
 
     unsigned sideOrd = 0;
     std::string ssname;
@@ -298,9 +313,9 @@ void HexBlockBase::generate_x_boundary(
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
 
-    for (int k=0; k<mz; k++) {
-        for (int j=0; j<my; j++) {
-            const int idx = k * (mx * my) + j * mx + ix;
+    for (EntID k=0; k<mz; k++) {
+        for (EntID j=0; j<my; j++) {
+            const EntID idx = k * (mx * my) + j * mx + ix;
             bulk_.declare_element_side(elemVec[idx], sideOrd, partVec);
         }
     }
@@ -310,9 +325,10 @@ void HexBlockBase::generate_y_boundary(
     const std::vector<stk::mesh::Entity>& elemVec,
     const SideIDType id)
 {
-    int mx = meshDims_[0];
-    int my = meshDims_[1];
-    int mz = meshDims_[2];
+    using EntID = stk::mesh::EntityId;
+    EntID mx = meshDims_[0];
+    EntID my = meshDims_[1];
+    EntID mz = meshDims_[2];
 
     unsigned sideOrd = 0;
     std::string ssname;
@@ -322,9 +338,9 @@ void HexBlockBase::generate_y_boundary(
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
 
-    for (int k=0; k<mz; k++) {
-        for (int i=0; i<mx; i++) {
-            const int idx = k * (mx * my) + iy * mx + i;
+    for (EntID k=0; k<mz; k++) {
+        for (EntID i=0; i<mx; i++) {
+            const EntID idx = k * (mx * my) + iy * mx + i;
             bulk_.declare_element_side(elemVec[idx], sideOrd, partVec);
         }
     }
@@ -334,13 +350,14 @@ void HexBlockBase::generate_z_boundary(
     const std::vector<stk::mesh::Entity>& elemVec,
     const SideIDType id)
 {
+    using EntID = stk::mesh::EntityId;
     const auto& pinfo = get_mpi();
     if (!(((id == ZMIN) && (pinfo.rank() == 0)) ||
           ((id == ZMAX) && (pinfo.rank() == (pinfo.size() - 1)))))
         return;
 
-    int mx = meshDims_[0];
-    int my = meshDims_[1];
+    EntID mx = meshDims_[0];
+    EntID my = meshDims_[1];
 
     unsigned sideOrd = 0;
     std::string ssname;
@@ -350,9 +367,9 @@ void HexBlockBase::generate_z_boundary(
     stk::mesh::Part* part = meta_.get_part(ssname);
     stk::mesh::PartVector partVec{part};
 
-    for (int j=0; j<my; j++) {
-        for (int i=0; i<mx; i++) {
-            const int idx = iz * (mx * my) + j * mx + i;
+    for (EntID j=0; j<my; j++) {
+        for (EntID i=0; i<mx; i++) {
+            const EntID idx = iz * (mx * my) + j * mx + i;
             bulk_.declare_element_side(elemVec[idx], sideOrd, partVec);
         }
     }
@@ -364,13 +381,14 @@ HexBlockBase::add_node_sharing(
     const unsigned zindex,
     const int otherProc)
 {
-    const unsigned nx = meshDims_[0] + 1;
-    const unsigned ny = meshDims_[1] + 1;
-    const unsigned offset = zindex * nx * ny;
+    using EntID = stk::mesh::EntityId;
+    const EntID nx = meshDims_[0] + 1;
+    const EntID ny = meshDims_[1] + 1;
+    const EntID offset = zindex * nx * ny;
 
-    unsigned idx = 0;
-    for (unsigned j=0; j < ny; ++j)
-        for (unsigned i = 0; i < nx; ++i) {
+    EntID idx = 0;
+    for (EntID j=0; j < ny; ++j)
+        for (EntID i = 0; i < nx; ++i) {
             bulk_.add_node_sharing(nodes[offset + idx], otherProc);
             idx++;
         }
