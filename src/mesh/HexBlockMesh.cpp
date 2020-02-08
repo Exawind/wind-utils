@@ -184,12 +184,13 @@ void HexBlockMesh::load(const YAML::Node& node)
 
 void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& nodeVec)
 {
+    using EntID = stk::mesh::EntityId;
     const auto& pinfo = get_mpi();
     const std::string timerName("HexBlockMesh::generate_coordinates");
     auto timeMon = get_stopwatch(timerName);
-    int nx = meshDims_[0] + 1;
-    int ny = meshDims_[1] + 1;
-    int nz = meshDims_[2] + 1;
+    EntID nx = meshDims_[0] + 1;
+    EntID ny = meshDims_[1] + 1;
+    EntID nz = meshDims_[2] + 1;
 
     VectorFieldType* coords = meta_.get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
@@ -206,13 +207,13 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
     auto& rzvec = zSpacing_->ratios();
 
     const int* start = nodeBlock_.start;
-    for (int k=0; k < nz; k++) {
+    for (EntID k=0; k < nz; k++) {
         double rz = rzvec[k + start[2]];
-        for (int j=0; j < ny; j++) {
+        for (EntID j=0; j < ny; j++) {
             double ry = ryvec[j + start[1]];
-            for (int i=0; i < nx; i++) {
+            for (EntID i=0; i < nx; i++) {
                 double rx = rxvec[i + start[0]];
-                int idx = k * (nx * ny) + j * nx + i;
+                EntID idx = k * (nx * ny) + j * nx + i;
                 auto node = bulk_.get_entity(stk::topology::NODE_RANK, nodeVec[idx]);
                 double* pt = stk::mesh::field_data(*coords, node);
 
