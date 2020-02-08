@@ -46,6 +46,12 @@ target_link_libraries(slice_mesh
   ${YAML_CPP_LIBRARIES}
   ${MPI_LIBRARIES})
 
+target_compile_options(abl_mesh
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
+
+target_compile_options(slice_mesh
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
+
 if(MPI_COMPILE_FLAGS)
   set_target_properties(abl_mesh PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")

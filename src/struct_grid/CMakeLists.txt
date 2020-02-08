@@ -10,6 +10,9 @@ endif()
 
 add_library(struct_grid ${STRUCT_GRID_SOURCES})
 
+target_compile_options(struct_grid
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
+
 target_link_libraries(struct_grid
   ${MPI_LIBARIES})
 

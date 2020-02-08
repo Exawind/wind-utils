@@ -8,6 +8,9 @@ target_link_libraries(utilscore
   ${YAML_CPP_LIBRARIES}
   ${MPI_LIBRARIES})
 
+target_compile_options(utilscore
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
+
 if(MPI_COMPILE_FLAGS)
   set_target_properties(utilscore PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")

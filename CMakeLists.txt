@@ -11,7 +11,7 @@
 # limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
 
 project(NaluWindUtils CXX C Fortran)
 
@@ -23,6 +23,7 @@ option(ENABLE_SPHINX_DOCS "Enable Sphinx-based user/developer manual" off)
 option(ENABLE_DOXYGEN_DOCS "Enable API documentation using Doxygen" off)
 option(ENABLE_SPHINX_API_DOCS "Enable linking Doxygen API documentation to Sphinx" off)
 option(ENABLE_HYPRE "Enable HYPRE solver interface" off)
+option(ENABLE_WARNINGS "Enable warnings during build" on)
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
@@ -54,6 +55,10 @@ if (OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
+
+if (ENABLE_WARNINGS)
+  list(APPEND WIND_UTILS_WARN_FLAGS "-Wall" "-Wextra" "-pedantic")
 endif()
 
 add_subdirectory(src)

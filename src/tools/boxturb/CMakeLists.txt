@@ -13,6 +13,15 @@ target_link_libraries(
   ${YAML_CPP_LIBRARIES}
   ${MPI_LIBRARIES})
 
+add_executable(teststk
+  test.cpp)
+target_link_libraries(
+  teststk
+  ${Trilinos_TPL_LIBRARIES}
+  ${Trilinos_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+  ${MPI_LIBRARIES})
+
 if(MPI_COMPILE_FLAGS)
   set_target_properties(boxturb PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")

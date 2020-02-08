@@ -6,6 +6,9 @@ add_executable(turbsim_netcdf
   turbsim_netcdf.cpp
   )
 
+target_compile_options(turbsim_netcdf
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
+
 target_link_libraries(turbsim_netcdf
   utilscore
   ${Trilinos_TPL_LIBRARIES}
