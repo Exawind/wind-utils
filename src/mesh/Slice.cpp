@@ -131,7 +131,7 @@ void Slice::initialize()
     pinfo.info()
         << "Slice: Registering parts to meta data: " << std::endl;
 
-    for (int i=0; i < num_planes_; ++i) {
+    for (unsigned i=0; i < num_planes_; ++i) {
         std::string pName = partNamePrefix_ + "_" + std::to_string(i+1);
         {
             auto* part = meta.get_part(pName);
@@ -172,7 +172,7 @@ void Slice::run()
 
             size_t nidx=0;
             unsigned marker = 1;
-            for (int i=0; i < num_planes_; ++i) {
+            for (unsigned i=0; i < num_planes_; ++i) {
                 auto* part = partVec_[i];
                 for (size_t ip = 0; ip < npPlane; ++ip) {
                     bulk.declare_entity(
@@ -194,7 +194,7 @@ void Slice::run()
             bulk.generate_new_ids(stk::topology::ELEM_RANK, num_elems, elemIDs);
 
             stk::mesh::EntityIdVector nids(4);
-            for (int i=0; i < num_planes_; ++i) {
+            for (unsigned i=0; i < num_planes_; ++i) {
                 auto* part = partVec_[i];
                 size_t offset = i * npPlane;
                 for (size_t iy=0; iy < grid_dims_[1]-1; ++iy) {
@@ -227,13 +227,13 @@ void Slice::run()
     pinfo.info() << "Generating coordinate field" << std::endl;
     const double dy = 1.0 / static_cast<double>(grid_dims_[1] - 1);
     const double dx = 1.0 / static_cast<double>(grid_dims_[0] - 1);
-    for (int k=0; k < num_planes_; ++k) {
+    for (unsigned k=0; k < num_planes_; ++k) {
         pinfo.info() << " - " << partVec_[k]->name() << std::endl;
         size_t offset = k * npPlane;
-        for (int j=0; j < grid_dims_[1]; ++j) {
+        for (size_t j=0; j < grid_dims_[1]; ++j) {
             size_t offset1 = offset + j * grid_dims_[0];
             const double ry = j * dy;
-            for (int i=0; i < grid_dims_[0]; ++i) {
+            for (size_t i=0; i < grid_dims_[0]; ++i) {
                 size_t idx = offset1 + i;
                 const double rx = i * dx;
                 auto node = bulk.get_entity(stk::topology::NODE_RANK, nodeIDs[idx]);

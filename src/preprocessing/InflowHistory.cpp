@@ -84,7 +84,6 @@ void InflowHistory::run()
     auto& pinfo = get_mpi();
     auto& meta = mesh_.meta();
     auto& bulk = mesh_.bulk();
-    const int nDim = meta.spatial_dimension();
 
     const stk::mesh::Selector sel = stk::mesh::selectUnion(partVec_);
     auto& bkts = bulk.get_buckets(stk::topology::NODE_RANK, sel);
@@ -102,7 +101,7 @@ void InflowHistory::run()
     double time, uvel, vvel, wvel;
     mesh_.write_timesteps(
         output_db_, numSteps_, outfields,
-        [&](int tstep) {
+        [&](int) {
             inflow >> time >> uvel >> vvel >> wvel;
 
             for (auto b: bkts) {

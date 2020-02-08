@@ -242,7 +242,6 @@ void HexBlockBase::generate_elements()
             stk::mesh::OrdinalVector scratch1, scratch2, scratch3;
 
             pinfo.info() << "\tCreating element connectivity... " << std::flush;
-            unsigned marker = 1;
             EntID idx;
             for (EntID k=0; k < mz; k++) {
                 EntID ik = k * (nx * ny);

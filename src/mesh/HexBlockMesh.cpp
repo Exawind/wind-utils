@@ -101,7 +101,6 @@ HexBlockMesh::~HexBlockMesh()
 void HexBlockMesh::load(const YAML::Node& node)
 {
     using namespace sierra::nalu::wind_utils;
-    using idx_t = SGTraits::idx_t;
 
     const auto& pinfo = get_mpi();
 
