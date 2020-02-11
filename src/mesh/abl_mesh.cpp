@@ -27,7 +27,8 @@
 #include "stk_util/parallel/Parallel.hpp"
 #include "stk_io/WriteMesh.hpp"
 
-#include "boost/program_options.hpp"
+#include "stk_util/environment/OptionsSpecification.hpp"
+#include "stk_util/environment/ParseCommandLineArgs.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -38,18 +39,16 @@ int main(int argc, char** argv)
     stk::ParallelMachine comm = stk::parallel_machine_init(&argc, &argv);
 
     std::string inpfile;
-    boost::program_options::options_description desc(
-        "Nalu ABL mesh generation utility. Valid options are");
+    stk::OptionsSpecification desc("Nalu ABL mesh generation utility.");
     desc.add_options()
         ("help,h", "Show this help message")
         ("input-file,i",
-         boost::program_options::value<std::string>(&inpfile)->default_value(
-             "nalu_abl_mesh.yaml"),
-         "Input file with preprocessor options");
+         "Input file with preprocessor options",
+         stk::TargetPointer<std::string>(&inpfile),
+         stk::DefaultValue<std::string>("nalu_abl_mesh.yaml"));
 
-    boost::program_options::variables_map vmap;
-    boost::program_options::store(
-        boost::program_options::parse_command_line(argc, argv, desc), vmap);
+    stk::ParsedOptions vmap;
+    stk::parse_command_line_args(argc, const_cast<const char**>(argv), desc, vmap);
 
     if (vmap.count("help")) {
         if (!stk::parallel_machine_rank(comm))
@@ -57,7 +56,6 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    inpfile = vmap["input-file"].as<std::string>();
     std::ifstream fin(inpfile.c_str());
 
     if (!fin.good()) {

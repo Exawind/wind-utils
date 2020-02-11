@@ -17,7 +17,8 @@
 #include "core/YamlUtils.h"
 
 #include "stk_util/parallel/Parallel.hpp"
-#include "boost/program_options.hpp"
+#include "stk_util/environment/OptionsSpecification.hpp"
+#include "stk_util/environment/ParseCommandLineArgs.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -34,17 +35,16 @@ int main(int argc, char** argv)
         throw std::runtime_error("Cannot run turbulence file processor in parallel");
 
     std::string filename;
-    boost::program_options::options_description desc(
+    stk::OptionsSpecification desc(
         "Nalu turbsim convertor utility. Valid options are");
-    desc.add_options()("help,h", "Show this help message")(
-        "input-file,i",
-        boost::program_options::value<std::string>(&filename)->default_value(
-            "turbsim_netcdf.yaml"),
-        "Input file with preprocessor options");
+    desc.add_options()("help,h", "Show this help message")
+        ("input-file,i", "Input file for turbsim",
+         stk::TargetPointer<std::string>(&filename),
+         stk::DefaultValue<std::string>("turbsim_netcdf.yaml"));
 
-    boost::program_options::variables_map vmap;
-    boost::program_options::store(
-        boost::program_options::parse_command_line(argc, argv, desc), vmap);
+    stk::ParsedOptions vmap;
+    stk::parse_command_line_args(
+        argc, const_cast<const char**>(argv), desc, vmap);
 
     if (vmap.count("help")) {
         std::cout << desc << std::endl;

@@ -21,7 +21,8 @@
 #include "core/YamlUtils.h"
 #include "core/ParallelInfo.h"
 
-#include "boost/program_options.hpp"
+#include "stk_util/environment/OptionsSpecification.hpp"
+#include "stk_util/environment/ParseCommandLineArgs.hpp"
 #include "stk_util/parallel/Parallel.hpp"
 
 int main(int argc, char**argv)
@@ -29,36 +30,36 @@ int main(int argc, char**argv)
     stk::ParallelMachine comm = stk::parallel_machine_init(&argc, &argv);
     const auto& pinfo = sierra::nalu::get_mpi();
 
-    std::string filename;
-    boost::program_options::options_description desc(
-        "Nalu turbsim convertor utility. Valid options are");
-    desc.add_options()("help,h", "Show this help message")(
-        "input-file,i",
-        boost::program_options::value<std::string>(&filename)->default_value(
-            "boxturb.yaml"),
-        "Input file with preprocessor options");
+    std::string inpfile;
+    stk::OptionsSpecification desc(
+        "Nalu postprocessor utility. Valid options are");
+    desc.add_options()
+        ("help,h", "Show this help message")
+        ("input-file,i",
+         "Input file with post-processing options",
+         stk::TargetPointer<std::string>(&inpfile),
+         stk::DefaultValue<std::string>("nalu_postprocess.yaml"));
 
-    boost::program_options::variables_map vmap;
-    boost::program_options::store(
-        boost::program_options::parse_command_line(argc, argv, desc), vmap);
+    stk::ParsedOptions vmap;
+    stk::parse_command_line_args(
+        argc, const_cast<const char**>(argv), desc, vmap);
 
     if (vmap.count("help")) {
         pinfo.info() << desc << std::endl;
         return 0;
     }
 
-    filename = vmap["input-file"].as<std::string>();
-    std::ifstream fin(filename.c_str());
+    std::ifstream fin(inpfile.c_str());
     if (!fin.good()) {
-        pinfo.info() << "Cannot find input file: " << filename << std::endl;
+        pinfo.info() << "Cannot find input file: " << inpfile << std::endl;
         return 1;
     }
 
     pinfo.info() << "\nNalu Turbulent File Processing Utility\n"
-                 << "Input file: " << filename << std::endl;
+                 << "Input file: " << inpfile << std::endl;
 
-    YAML::Node inpfile(YAML::LoadFile(filename));
-    const auto& node = inpfile["boxturb"];
+    YAML::Node ynode(YAML::LoadFile(inpfile));
+    const auto& node = ynode["boxturb"];
 
     sierra::nalu::BoxTurb turb;
     turb.load(node);
