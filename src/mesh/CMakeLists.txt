@@ -20,6 +20,7 @@ add_executable(abl_mesh
   spacing/MeshSpacing.cpp
   spacing/ConstantSpacing.cpp
   spacing/GeometricStretching.cpp
+  spacing/UserSpecified.cpp
 
   HexBlockBase.cpp
   HexBlockMesh.cpp

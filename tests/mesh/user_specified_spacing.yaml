@@ -1,0 +1,13 @@
+nalu_abl_mesh:
+  output_db: user_specified_spacing.g
+  spec_type: bounding_box
+
+  vertices:
+    - [0.0, 0.0, 0.0]
+    - [10.0, 10.0, 10.0]
+
+  mesh_dimensions: [5, 1, 1]
+
+  x_spacing:
+    spacing_type: user_specified_spacing
+    node_spacing_ratios: [0.0, 0.1, 0.3, 0.6, 0.75, 1.0]
