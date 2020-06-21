@@ -1,7 +1,4 @@
-FROM exawind/exw-trilinos AS trilinos
-FROM exawind/exw-dev-deps as base
-
-COPY --from=trilinos /opt/exawind /opt/exawind
+FROM exawind/exawind-dev as base
 
 WORKDIR /workspace
 COPY . /workspace
