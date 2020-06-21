@@ -1,6 +1,6 @@
 # Nalu Wind Energy Utilities
 
-![Docs status](https://readthedocs.org/projects/naluwindutils/badge/)
+[Documentation](https://naluwindutils.readthedocs.io) | ![build](https://github.com/Exawind/wind-utils/workflows/build/badge.svg) | ![Docs status](https://readthedocs.org/projects/naluwindutils/badge/)
 
 This is a companion software library to
 [Nalu-Wind](http://nalu-wind.readthedocs.io/en/latest/) a generalized,
