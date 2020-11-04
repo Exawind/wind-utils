@@ -38,8 +38,6 @@
 #include <stk_io/StkMeshIoBroker.hpp>
 #include <Ionit_Initializer.h>
 
-#include <boost/format.hpp>
-
 #include <iostream>
 
 namespace sierra {
@@ -137,7 +135,7 @@ void SamplingPlanes::initialize()
     if (iproc == 0)
         std::cout << "SamplingPlanes: Registering parts to meta data:" << std::endl;
     for(auto zh: heights_) {
-        std::string pName = (boost::format(name_format_)%zh).str();
+        std::string pName = name_format_ + std::to_string(zh);
         stk::mesh::Part* part_check = meta_.get_part(pName);
         if (part_check != NULL){
             throw std::runtime_error(
@@ -251,7 +249,7 @@ void SamplingPlanes::generate_zplane(const double zh)
     auto timeMon = get_stopwatch(timerName);
     const unsigned iproc = bulk_.parallel_rank();
     const unsigned nproc = bulk_.parallel_size();
-    const std::string pName = (boost::format(name_format_)%zh).str();
+    const std::string pName = name_format_ + std::to_string(zh);
     stk::mesh::Part& part = *meta_.get_part(pName);
 
     unsigned gNumPoints = nx_ * ny_;
