@@ -16,6 +16,7 @@
 #ifndef HYPRESTRUCTSOLVER_H
 #define HYPRESTRUCTSOLVER_H
 
+#include <cassert>
 #include "struct_grid/StructGrid.h"
 #include "core/YamlUtils.h"
 
