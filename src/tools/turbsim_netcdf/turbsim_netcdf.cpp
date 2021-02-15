@@ -19,6 +19,10 @@
 #include "stk_util/parallel/Parallel.hpp"
 #include "stk_util/environment/OptionsSpecification.hpp"
 #include "stk_util/environment/ParseCommandLineArgs.hpp"
+#include "stk_util/environment/ParsedOptions.hpp"
+
+#include "netcdf.h"
+#include "netcdf_par.h"
 
 #include <iostream>
 #include <fstream>
@@ -26,7 +30,7 @@
 #include <algorithm>
 #include <memory>
 
-int main(int argc, char** argv)
+int backup(int argc, char** argv)
 {
     stk::ParallelMachine comm = stk::parallel_machine_init(&argc, &argv);
 
@@ -85,6 +89,54 @@ int main(int argc, char** argv)
     turbFile->load_turbulence_data(node);
     turbFile->write_netcdf(output);
 
+    stk::parallel_machine_finalize();
+    return 0;
+}
+
+inline void
+check_nc_error(int ierr)
+{
+    if (ierr != NC_NOERR)
+        throw std::runtime_error(
+            "NetCDF Error: " + std::string(nc_strerror(ierr)));
+}
+
+#define BTNC_CALL(funcarg)                      \
+    do {                                        \
+        int ierr = funcarg;                     \
+        check_nc_error(ierr);                   \
+    } while (0)
+
+
+int main(int argc, char** argv)
+{
+    stk::ParallelMachine comm = stk::parallel_machine_init(&argc, &argv);
+
+    // int iproc = stk::parallel_machine_size(comm);
+
+    const std::string outfile = "test_ncwrite.nc";
+    int ncid, ierr;
+    ierr = nc_create_par(
+        outfile.c_str(), NC_CLOBBER | NC_NETCDF4 | NC_MPIIO,
+        comm, MPI_INFO_NULL, &ncid);
+    check_nc_error(ierr);
+
+    int recDim, timeID;
+    ierr = nc_def_dim(ncid, "num_timesteps", NC_UNLIMITED, &recDim);
+    ierr = nc_def_var(ncid, "time", NC_DOUBLE, 1, &recDim, &timeID);
+    ierr = nc_var_par_access(ncid, timeID, NC_COLLECTIVE);
+    ierr = nc_enddef(ncid);
+    check_nc_error(ierr);
+
+    size_t count0 = 1;
+    for (size_t i=0; i < 10; ++i) {
+        double time = 0.1 * i;
+        ierr = nc_put_vara_double(ncid, timeID, &i, &count0, &time);
+        check_nc_error(ierr);
+    }
+
+    ierr = nc_close(ncid);
+    check_nc_error(ierr);
     stk::parallel_machine_finalize();
     return 0;
 }
