@@ -2,8 +2,8 @@
 function(preproc_test testname)
   add_test(
     ${testname}
-    ${CMAKE_BINARY_DIR}/src/preprocessing/nalu_preprocess
-    -i ${CMAKE_CURRENT_SOURCE_DIR}/${testname}.yaml)
+    ${CMAKE_CURRENT_BINARY_DIR}/src/preprocessing/nalu_preprocess
+      -i ${CMAKE_CURRENT_SOURCE_DIR}/${testname}.yaml)
   set_tests_properties(${testname} PROPERTIES LABELS "preprocess")
 endfunction(preproc_test)
 

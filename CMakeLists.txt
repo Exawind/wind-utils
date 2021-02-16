@@ -24,6 +24,7 @@ option(ENABLE_DOXYGEN_DOCS "Enable API documentation using Doxygen" off)
 option(ENABLE_SPHINX_API_DOCS "Enable linking Doxygen API documentation to Sphinx" off)
 option(ENABLE_HYPRE "Enable HYPRE solver interface" off)
 option(ENABLE_WARNINGS "Enable warnings during build" on)
+option(ENABLE_REGTESTS "Enable regression tests" off)
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
@@ -67,8 +68,10 @@ if (ENABLE_SPHINX_DOCS OR ENABLE_DOXYGEN_DOCS)
   add_subdirectory(doc)
 endif()
 
-include(CTest)
-add_subdirectory(tests)
+if (ENABLE_REGTESTS)
+  include(CTest)
+  add_subdirectory(tests)
+endif()
 
 # Install library dependency information
 install(EXPORT ${PROJECT_NAME}Libraries
