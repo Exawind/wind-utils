@@ -181,7 +181,7 @@ void HypreStructSolver::populate_matrix(const std::vector<double>& entries)
 {
     using idx_t = SGTraits::idx_t;
     const int num_entries = entries.size();
-    assert(num_entries == NUM_STENCIL);
+    assert(num_entries == fvm::NUM_STENCIL);
     std::vector<HYPRE_Int> stencil_entries(num_entries);
 
     for (int d=0; d < num_entries; ++d)
