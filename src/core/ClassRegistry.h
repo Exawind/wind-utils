@@ -70,8 +70,6 @@
 
 //! Initialize the static members of class registration infrastructure
 #define DEFINE_INHERITANCE_REGISTRY(baseCls)                                              \
-    baseCls::baseCls##Reg_Table_t* baseCls::baseCls##Reg_ConstructorTable_ = nullptr;     \
-                                                                                          \
     void baseCls::baseCls##Reg_TableInit()                                                \
     {                                                                                     \
         static bool constructed=false;                                                    \
@@ -86,7 +84,8 @@
             delete baseCls::baseCls##Reg_ConstructorTable_;                               \
             baseCls::baseCls##Reg_ConstructorTable_ = nullptr;                            \
         }                                                                                 \
-    }
+    }                                                                                     \
+baseCls::baseCls##Reg_Table_t* baseCls::baseCls##Reg_ConstructorTable_ = nullptr
 
 //! Convenience wrapper to register subclass to base class
 #define REGISTER_DERIVED_CLASS(baseCls, subClass, lookup)                                 \

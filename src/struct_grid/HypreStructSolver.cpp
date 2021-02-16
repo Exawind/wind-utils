@@ -194,7 +194,7 @@ void HypreStructSolver::populate_matrix(const std::vector<double>& entries)
     size_t m = 0;
     sgix::kji_loop(
         rbox,
-        [&](idx_t i, idx_t j, idx_t k) {
+        [&](idx_t, idx_t, idx_t) {
             for (int d=0; d < num_entries; d++) {
                 values[m] = entries[d];
                 m++;
