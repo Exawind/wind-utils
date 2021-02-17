@@ -117,7 +117,7 @@ void ABLFields::load_velocity_info(const YAML::Node& abl)
         "for initializing ABL fields. Check input file.");
 
     ThrowAssertMsg(
-        (ndim_ == velInputs.at(0).size()),
+        (ndim_ == static_cast<int>(velInputs.at(0).size())),
         "ABLFields: Velocity components have all 3 components");
 
     velocity_.resize(ndim_);
