@@ -134,7 +134,7 @@ void HexBlockMesh::load(const YAML::Node& node)
     }
 
     auto meshDims = node["mesh_dimensions"].as<std::vector<int>>();
-    ThrowRequire(meshDims.size() == SGTraits::ndim);
+    STK_ThrowRequire(meshDims.size() == SGTraits::ndim);
     elemGrid_.set_global_grid(meshDims[0], meshDims[1], meshDims[2]);
     elemGrid_.set_partitions(1, 1, pinfo.size());
 

@@ -65,8 +65,8 @@ void RotateMesh::load(const YAML::Node& node)
     axis_ = node["axis"].as<std::vector<double>>();
     origin_ = node["origin"].as<std::vector<double>>();
 
-    ThrowAssert(axis_.size() == 3);
-    ThrowAssert(origin_.size() == 3);
+    STK_ThrowAssert(axis_.size() == 3);
+    STK_ThrowAssert(origin_.size() == 3);
 }
 
 void RotateMesh::initialize()

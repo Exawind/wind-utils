@@ -74,10 +74,10 @@ public:
     inline stk::ParallelMachine& comm() { return comm_; }
 
     //! Reference to the stk::mesh::MetaData instance
-    inline stk::mesh::MetaData& meta() { return meta_; }
+    inline stk::mesh::MetaData& meta() { return *meta_; }
 
     //! Reference to the stk::mesh::BulkData instance
-    inline stk::mesh::BulkData& bulk() { return bulk_; }
+    inline stk::mesh::BulkData& bulk() { return *bulk_; }
 
     //! Reference to the STK mesh I/O instance
     inline stk::io::StkMeshIoBroker& stkio() { return stkio_; }
@@ -159,7 +159,7 @@ public:
     {
         size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
         for (auto fname: field_list) {
-            stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
+            stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, *meta_);
             if (fld != nullptr) {
                 stkio_.add_field(fh, *fld, fname);
             }
@@ -242,10 +242,10 @@ private:
     stk::ParallelMachine& comm_;
 
     //! STK Metadata object
-    stk::mesh::MetaData meta_;
+    std::shared_ptr<stk::mesh::MetaData> meta_;
 
     //! STK Bulkdata object
-    stk::mesh::BulkData bulk_;
+    std::unique_ptr<stk::mesh::BulkData> bulk_;
 
     //! Filename for the mesh input database
     std::string input_db_{""};

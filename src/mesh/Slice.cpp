@@ -52,7 +52,7 @@ void Slice::load(const YAML::Node& node)
         if (node[axesName]) {
             axesLoaded[i] = 1;
             const auto axis = node[axesName].as<std::vector<double>>();
-            NGP_ThrowRequireMsg(
+            STK_NGP_ThrowRequireMsg(
                 axis.size() == NDim, "Incorrect dimensions for axes");
 
             // Normalize and save the axis vector
@@ -69,7 +69,7 @@ void Slice::load(const YAML::Node& node)
             numAxes++;
         }
     }
-    NGP_ThrowRequireMsg(
+    STK_NGP_ThrowRequireMsg(
         numAxes > 1, "Need at least two axes provided in the input file");
 
     for (int i=0; i < NDim; ++i) {
@@ -86,9 +86,9 @@ void Slice::load(const YAML::Node& node)
     const auto origin = node["origin"].as<std::vector<double>>();
     const auto grid_len = node["grid_lengths"].as<std::vector<double>>();
     grid_dx_ = node["grid_dx"].as<std::vector<double>>();
-    NGP_ThrowRequireMsg(origin.size() == NDim, "Incorrect dimensions for origin");
-    NGP_ThrowRequireMsg(grid_len.size() == 2, "Incorrect dimensions for grid_len");
-    NGP_ThrowRequireMsg(grid_dx_.size() == 2, "Incorrect dimensions for grid_dx");
+    STK_NGP_ThrowRequireMsg(origin.size() == NDim, "Incorrect dimensions for origin");
+    STK_NGP_ThrowRequireMsg(grid_len.size() == 2, "Incorrect dimensions for grid_len");
+    STK_NGP_ThrowRequireMsg(grid_dx_.size() == 2, "Incorrect dimensions for grid_dx");
 
     // Compute the bounding box vertices
     for (int d=0; d < NDim; ++d) {
@@ -105,7 +105,7 @@ void Slice::load(const YAML::Node& node)
     wind_utils::get_optional(node, "num_planes", num_planes_);
     if (num_planes_ > 1) {
         plane_offsets_ = node["plane_offsets"].as<std::vector<double>>();
-        NGP_ThrowRequireMsg(plane_offsets_.size() == num_planes_,
+        STK_NGP_ThrowRequireMsg(plane_offsets_.size() == num_planes_,
                             "Invalid number of offsets specified");
     } else {
         plane_offsets_.push_back(0.0);
@@ -136,7 +136,7 @@ void Slice::initialize()
         std::string pName = partNamePrefix_ + "_" + std::to_string(i+1);
         {
             auto* part = meta.get_part(pName);
-            NGP_ThrowRequireMsg(
+            STK_NGP_ThrowRequireMsg(
                 part == nullptr, "Slice: cannot overwrite an existing part");
         }
 
