@@ -78,7 +78,7 @@ int main(int argc, char** argv)
         preprocess.run();
     }
 
-    Kokkos::finalize_all();
+    Kokkos::finalize();
 
     stk::parallel_machine_finalize();
     return 0;
