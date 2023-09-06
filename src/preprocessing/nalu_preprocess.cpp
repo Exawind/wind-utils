@@ -73,6 +73,8 @@ int main(int argc, char** argv)
                   << "Input file: " << inpfile << std::endl;
     }
 
+    Kokkos::DefaultExecutionSpace{}.print_configuration(std::cout);
+
     {
         sierra::nalu::PreProcessDriver preprocess(comm, inpfile);
         preprocess.run();
