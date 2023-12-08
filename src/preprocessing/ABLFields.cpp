@@ -19,6 +19,7 @@
 #include "core/YamlUtils.h"
 #include "core/KokkosWrappers.h"
 #include "core/PerfUtils.h"
+#include "stk_io/IossBridge.hpp"
 
 #include <random>
 
@@ -74,16 +75,18 @@ void ABLFields::initialize()
     const std::string timerName = "ABLfields::initialize";
     auto timeMon = get_stopwatch(timerName);
     if (doVelocity_) {
-        VectorFieldType& velocity = meta_.declare_field<VectorFieldType>(
+        VectorFieldType& velocity = meta_.declare_field<double>(
             stk::topology::NODE_RANK, "velocity");
         for(auto part: fluid_parts_) {
-            stk::mesh::put_field_on_mesh(velocity, *part, nullptr);
+            stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
+            stk::io::set_field_output_type(
+                velocity, stk::io::FieldOutputType::VECTOR_3D);
         }
         mesh_.add_output_field("velocity");
     }
 
     if (doTemperature_) {
-        ScalarFieldType& temperature = meta_.declare_field<ScalarFieldType>(
+        ScalarFieldType& temperature = meta_.declare_field<double>(
             stk::topology::NODE_RANK, "temperature");
         for(auto part: fluid_parts_) {
             stk::mesh::put_field_on_mesh(temperature, *part, nullptr);
@@ -182,9 +185,9 @@ void ABLFields::init_velocity_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
+    VectorFieldType* velocity = meta_.get_field<double>(
         stk::topology::NODE_RANK, "velocity");
 
     Kokkos::parallel_for(
@@ -224,9 +227,9 @@ void ABLFields::perturb_velocity_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
+    VectorFieldType* velocity = meta_.get_field<double>(
         stk::topology::NODE_RANK, "velocity");
 
     auto bbox = mesh_.calc_bounding_box(fluid_union, false);
@@ -275,9 +278,9 @@ void ABLFields::init_temperature_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
+    ScalarFieldType* temperature = meta_.get_field<double>(
         stk::topology::NODE_RANK, "temperature");
 
     Kokkos::parallel_for(
@@ -325,9 +328,9 @@ void ABLFields::perturb_temperature_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
+    ScalarFieldType* temperature = meta_.get_field<double>(
         stk::topology::NODE_RANK, "temperature");
 
     // Random number generator for adding temperature perturbations

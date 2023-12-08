@@ -150,7 +150,7 @@ NestedRefinement::initialize()
     const std::string timerName = "NestedRefinement::initialize";
     auto timeMon = get_stopwatch(timerName);
     auto& meta = mesh_.meta();
-    ScalarFieldType& refiner = meta.declare_field<ScalarFieldType>(
+    ScalarFieldType& refiner = meta.declare_field<double>(
         stk::topology::ELEM_RANK, refineFieldName_);
     fluidParts_.resize(fluidPartNames_.size());
     for (size_t i=0; i < fluidPartNames_.size(); i++) {
@@ -160,7 +160,7 @@ NestedRefinement::initialize()
                                      fluidPartNames_[i]);
         else {
             fluidParts_[i] = part;
-            stk::mesh::put_field_on_mesh(refiner, *part, 1, nullptr);
+            stk::mesh::put_field_on_mesh(refiner, *part, nullptr);
         }
     }
     mesh_.add_output_field(refineFieldName_);
@@ -178,9 +178,9 @@ NestedRefinement::run()
         & stk::mesh::selectUnion(fluidParts_);
     const auto& bkts = bulk.get_buckets(
         stk::topology::ELEM_RANK, sel);
-    auto* coords = meta.get_field<VectorFieldType>(
+    auto* coords = meta.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    auto* refiner = meta.get_field<ScalarFieldType>(
+    auto* refiner = meta.get_field<double>(
         stk::topology::ELEM_RANK, refineFieldName_);
 
     if (doPrint)

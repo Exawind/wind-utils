@@ -14,6 +14,7 @@
 //
 
 #include "NDTW2D.h"
+#include "stk_io/IossBridge.hpp"
 
 namespace sierra {
 namespace nalu {
@@ -73,9 +74,9 @@ void NDTW2D::load(const YAML::Node& wdist)
 
 void NDTW2D::initialize()
 {
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    ScalarFieldType& ndtw = meta_.declare_field<ScalarFieldType>(
+    ScalarFieldType& ndtw = meta_.declare_field<double>(
         stk::topology::NODE_RANK, wall_dist_name_);
 
     for(auto part: fluid_parts_) {
@@ -104,9 +105,9 @@ void NDTW2D::calc_ndtw()
     const stk::mesh::BucketVector& wall_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, wall_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    ScalarFieldType* ndtw = meta_.get_field<ScalarFieldType>(
+    ScalarFieldType* ndtw = meta_.get_field<double>(
         stk::topology::NODE_RANK, wall_dist_name_);
 
     std::cout << "Calculating nearest wall distance... " << std::endl;

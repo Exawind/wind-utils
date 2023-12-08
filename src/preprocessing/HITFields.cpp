@@ -18,9 +18,9 @@
 #include "core/KokkosWrappers.h"
 #include "core/PerfUtils.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Field.hpp"
+#include "stk_io/IossBridge.hpp"
 
 #include <fstream>
 
@@ -72,10 +72,12 @@ void HITFields::initialize()
     auto timeMon = get_stopwatch(timerName);
 
     auto& meta = mesh_.meta();
-    VectorFieldType& velocity = meta.declare_field<VectorFieldType>(
+    VectorFieldType& velocity = meta.declare_field<double>(
         stk::topology::NODE_RANK, "velocity");
     for (auto part: fluid_parts_) {
-        stk::mesh::put_field_on_mesh(velocity, *part, nullptr);
+        stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
+        stk::io::set_field_output_type(
+            velocity, stk::io::FieldOutputType::VECTOR_3D);
     }
     mesh_.add_output_field("velocity");
 }
@@ -93,7 +95,7 @@ void HITFields::run()
     const int ny = hit_mesh_dims_[1];
     const int nz = hit_mesh_dims_[2];
 
-    VectorFieldType* velocity = meta.get_field<VectorFieldType>(
+    VectorFieldType* velocity = meta.get_field<double>(
         stk::topology::NODE_RANK, "velocity");
 
     std::ifstream hitfile(hit_filename_, std::ios::in | std::ios::binary);

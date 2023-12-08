@@ -17,6 +17,7 @@
 #include "core/PerfUtils.h"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Bucket.hpp"
+#include "stk_io/IossBridge.hpp"
 
 namespace sierra {
 namespace nalu {
@@ -61,7 +62,7 @@ void BdyIOPlanes::initialize()
     auto& iometa = iomesh_.meta();
 
     // We need coordinates
-    VectorFieldType& coords = iometa.declare_field<VectorFieldType>(
+    VectorFieldType& coords = iometa.declare_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     for (auto bdyName: bdyNames_) {
@@ -74,7 +75,10 @@ void BdyIOPlanes::initialize()
             bdyName, stk::topology::ELEM_RANK);
         stk::mesh::set_topology(iopart, stk::topology::SHELL_QUAD_4);
         stk::io::put_io_part_attribute(iopart);
-        stk::mesh::put_field_on_mesh(coords, iopart, iometa.spatial_dimension(), nullptr);
+        stk::mesh::put_field_on_mesh(
+            coords, iopart, iometa.spatial_dimension(), nullptr);
+        stk::io::set_field_output_type(
+            coords, stk::io::FieldOutputType::VECTOR_3D);
     }
 }
 
@@ -160,9 +164,9 @@ void BdyIOPlanes::create_boundary(const std::string bdyName)
     iobulk.modification_end();
 
     // Copy coordinates
-    VectorFieldType* fcoords = fmeta.get_field<VectorFieldType>(
+    VectorFieldType* fcoords = fmeta.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    VectorFieldType* iocoords = iometa.get_field<VectorFieldType>(
+    VectorFieldType* iocoords = iometa.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     {

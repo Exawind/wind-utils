@@ -27,7 +27,6 @@
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Entity.hpp>
 #include <stk_mesh/base/Field.hpp>
-#include <stk_mesh/base/CoordinateSystems.hpp>
 #include <stk_mesh/base/Comm.hpp>
 
 #include <vector>
@@ -87,7 +86,7 @@ void RotateMesh::run()
 {
     if (bulk_.parallel_rank() == 0)
         std::cout << "Rotating mesh " << std::endl;
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     stk::mesh::Selector s_part = stk::mesh::selectUnion(meshParts_);

@@ -82,7 +82,7 @@ void TranslateMesh::run()
     auto timeMon = get_stopwatch(timerName);
 
     const int ndim = meta.spatial_dimension();
-    VectorFieldType* coords = meta.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
     stk::mesh::Selector s_part = stk::mesh::selectUnion(parts_);
     const auto& bkts = bulk.get_buckets(stk::topology::NODE_RANK, s_part);

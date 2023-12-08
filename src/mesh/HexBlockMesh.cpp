@@ -18,7 +18,6 @@
 #include "core/PerfUtils.h"
 #include "core/ParallelInfo.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Field.hpp"
 
@@ -191,7 +190,7 @@ void HexBlockMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& 
     EntID ny = meshDims_[1] + 1;
     EntID nz = meshDims_[2] + 1;
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     pinfo.info() << "\t Generating x spacing: " << xspacing_type_ << std::endl;
