@@ -15,6 +15,7 @@
 
 
 #include "ChannelFields.h"
+#include "stk_io/IossBridge.hpp"
 
 namespace sierra {
 namespace nalu {
@@ -72,16 +73,18 @@ void ChannelFields::load(const YAML::Node& channel)
 void ChannelFields::initialize()
 {
     if (doVelocity_) {
-        VectorFieldType& velocity = meta_.declare_field<VectorFieldType>(
+        VectorFieldType& velocity = meta_.declare_field<double>(
             stk::topology::NODE_RANK, "velocity");
         for(auto part: fluid_parts_) {
-            stk::mesh::put_field_on_mesh(velocity, *part, nullptr);
+            stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
+            stk::io::set_field_output_type(
+                velocity, stk::io::FieldOutputType::VECTOR_3D);
         }
         mesh_.add_output_field("velocity");
     }
 
     if (doTKE_) {
-        ScalarFieldType& tke = meta_.declare_field<ScalarFieldType>(
+        ScalarFieldType& tke = meta_.declare_field<double>(
             stk::topology::NODE_RANK, "turbulent_ke");
         for(auto part: fluid_parts_) {
             stk::mesh::put_field_on_mesh(tke, *part, nullptr);
@@ -156,9 +159,9 @@ void ChannelFields::init_velocity_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
+    VectorFieldType* velocity = meta_.get_field<double>(
         stk::topology::NODE_RANK, "velocity");
 
     for(size_t ib=0; ib < fluid_bkts.size(); ib++) {
@@ -187,9 +190,9 @@ void ChannelFields::init_tke_field()
     const stk::mesh::BucketVector& fluid_bkts = bulk_.get_buckets(
         stk::topology::NODE_RANK, fluid_union);
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
-    ScalarFieldType* tke = meta_.get_field<ScalarFieldType>(
+    ScalarFieldType* tke = meta_.get_field<double>(
         stk::topology::NODE_RANK, "turbulent_ke");
 
     for(size_t ib=0; ib < fluid_bkts.size(); ib++) {

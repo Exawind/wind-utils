@@ -37,7 +37,9 @@ CFDMesh::CFDMesh
     bulk_(meta_, comm),
     input_db_(filename),
     stkio_(comm)
-{}
+{
+  meta_.use_simple_fields();
+}
 
 CFDMesh::CFDMesh
 (
@@ -62,9 +64,11 @@ void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
     stkio_.add_all_mesh_fields_as_input_fields();
 
     // Everyone needs coordinates
-    VectorFieldType& coords = meta_.declare_field<VectorFieldType>(
-        stk::topology::NODE_RANK, "coordinates");
-    stk::mesh::put_field_on_mesh(coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
+    VectorFieldType& coords = meta_.declare_field<double>(
+      stk::topology::NODE_RANK, "coordinates");
+    stk::mesh::put_field_on_mesh(
+      coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
+    stk::io::set_field_output_type(coords, stk::io::FieldOutputType::VECTOR_3D);
 }
 
 size_t CFDMesh::open_database(std::string output_db)
@@ -135,7 +139,7 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
     }
 
     auto& bkts = bulk_.get_buckets(stk::topology::NODE_RANK, selector);
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     for (auto b: bkts) {

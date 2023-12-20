@@ -28,9 +28,7 @@
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Entity.hpp>
 #include <stk_mesh/base/Field.hpp>
-#include <stk_mesh/base/CoordinateSystems.hpp>
 #include <stk_mesh/base/Comm.hpp>
-#include <stk_mesh/base/TopologyDimensions.hpp>
 #include <stk_mesh/base/FEMHelpers.hpp>
 
 #include <stk_io/IossBridge.hpp>
@@ -147,9 +145,12 @@ void SamplingPlanes::initialize()
 
             if (iproc == 0) std::cout << "\t " << pName << std::endl;
 
-            VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+            VectorFieldType* coords = meta_.get_field<double>(
                 stk::topology::NODE_RANK, "coordinates");
-            stk::mesh::put_field_on_mesh(*coords, part, meta_.spatial_dimension(), nullptr);
+            stk::mesh::put_field_on_mesh(
+                *coords, part, meta_.spatial_dimension(), nullptr);
+            stk::io::set_field_output_type(
+                *coords, stk::io::FieldOutputType::VECTOR_3D);
         }
     }
 }
@@ -173,7 +174,7 @@ void SamplingPlanes::calc_bounding_box()
     const std::string timerName = "SamplingPlanes::calc_bounding_box";
     auto timeMon = get_stopwatch(timerName);
     auto iproc = bulk_.parallel_rank();
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     stk::mesh::Selector s_part = stk::mesh::selectUnion(fluidParts_);
@@ -280,7 +281,7 @@ void SamplingPlanes::generate_zplane(const double zh)
     }
     bulk_.modification_end();
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     for (unsigned k=0; k < numPoints; k++) {

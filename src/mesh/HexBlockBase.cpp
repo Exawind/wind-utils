@@ -20,9 +20,9 @@
 #include "core/ParallelInfo.h"
 #include "struct_grid/StructGridIx.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Field.hpp"
+#include "stk_io/IossBridge.hpp"
 
 namespace sierra {
 namespace nalu {
@@ -82,9 +82,11 @@ void HexBlockBase::initialize()
 
     pinfo.info() << "HexBlockBase: Registering parts to meta data" << std::endl;
 
-    VectorFieldType& coords = meta_.declare_field<VectorFieldType>(
-        stk::topology::NODE_RANK, "coordinates");
-    stk::mesh::put_field_on_mesh(coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
+    VectorFieldType& coords = meta_.declare_field<double>(
+      stk::topology::NODE_RANK, "coordinates");
+    stk::mesh::put_field_on_mesh(
+      coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
+    stk::io::set_field_output_type(coords, stk::io::FieldOutputType::VECTOR_3D);
 
     // Block mesh part
     {
@@ -95,7 +97,8 @@ void HexBlockBase::initialize()
 
         pinfo.info() << "\tMesh block: " << blockName_ << std::endl;
 
-        stk::mesh::put_field_on_mesh(coords, part, meta_.spatial_dimension(), nullptr);
+        stk::mesh::put_field_on_mesh(
+          coords, part, meta_.spatial_dimension(), nullptr);
     }
 
     // West

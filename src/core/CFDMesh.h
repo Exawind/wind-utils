@@ -21,7 +21,6 @@
 #include "stk_mesh/base/BulkData.hpp"
 #include "stk_mesh/base/Entity.hpp"
 #include "stk_mesh/base/Field.hpp"
-#include "stk_mesh/base/CoordinateSystems.hpp"
 #include "stk_search/Point.hpp"
 #include "stk_search/Box.hpp"
 #include "stk_io/StkMeshIoBroker.hpp"
@@ -33,7 +32,7 @@
 namespace sierra {
 namespace nalu {
 
-typedef stk::mesh::Field<double, stk::mesh::Cartesian> VectorFieldType;
+typedef stk::mesh::Field<double> VectorFieldType;
 typedef stk::mesh::Field<double> ScalarFieldType;
 typedef stk::search::Point<double> PointType;
 typedef stk::search::Box<double> BoxType;

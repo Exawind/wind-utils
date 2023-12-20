@@ -17,7 +17,6 @@
 #include "core/PerfUtils.h"
 #include "core/ParallelInfo.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Field.hpp"
 
@@ -109,7 +108,7 @@ void Plot3DMesh::generate_coordinates(const std::vector<stk::mesh::EntityId>& no
     const int nz = meshDims_[2] + 1;
     int intval;
 
-    VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     std::ifstream p3d(p3dFile_, std::ios::in | std::ios::binary);

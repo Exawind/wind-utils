@@ -20,9 +20,9 @@
 #include "core/PerfUtils.h"
 #include "core/ParallelInfo.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
 #include "stk_mesh/base/Field.hpp"
+#include "stk_io/IossBridge.hpp"
 
 #include <fstream>
 #include <vector>
@@ -68,11 +68,13 @@ void InflowHistory::initialize()
     auto timeMon = get_stopwatch(timerName);
 
     auto& meta = mesh_.meta();
-    VectorFieldType& velocity = meta.declare_field<VectorFieldType>(
+    VectorFieldType& velocity = meta.declare_field<double>(
         stk::topology::NODE_RANK, "velocity");
     for (auto part: partVec_) {
         stk::mesh::put_field_on_mesh(
             velocity, *part, meta.spatial_dimension(), nullptr);
+        stk::io::set_field_output_type(
+            velocity, stk::io::FieldOutputType::VECTOR_3D);
     }
 }
 
@@ -93,7 +95,7 @@ void InflowHistory::run()
         throw std::runtime_error(
             "InflowHistory:: Error opening file: " + inflow_filename_);
 
-    auto* velocity = meta.get_field<VectorFieldType>(
+    auto* velocity = meta.get_field<double>(
         stk::topology::NODE_RANK, "velocity");
 
     pinfo.info() << "Writing time-history file = " << output_db_ << std::endl;

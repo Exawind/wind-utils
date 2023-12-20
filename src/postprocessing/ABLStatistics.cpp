@@ -16,6 +16,7 @@
 #include "ABLStatistics.h"
 
 #include "stk_util/parallel/ParallelReduce.hpp"
+#include "stk_io/IossBridge.hpp"
 
 #include <cmath>
 #include <fstream>
@@ -92,17 +93,18 @@ void ABLStatistics::load(const YAML::Node& node)
 void
 ABLStatistics::initialize()
 {
-    auto& velocity = meta_.declare_field<ScalarFieldType>(
+    auto& velocity = meta_.declare_field<double>(
         stk::topology::NODE_RANK, field_map_["velocity"]);
-    auto& temperature = meta_.declare_field<ScalarFieldType>(
+    auto& temperature = meta_.declare_field<double>(
         stk::topology::NODE_RANK, field_map_["temperature"]);
-    stk::mesh::FieldBase *sfs_stress = &meta_.declare_field<
-        stk::mesh::Field<double, stk::mesh::SimpleArrayTag>>(
+    stk::mesh::FieldBase *sfs_stress = &meta_.declare_field<double>(
         stk::topology::NODE_RANK, field_map_["sfs_stress"]);
 
     for (auto* part: fluid_parts_) {
         stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
-        stk::mesh::put_field_on_mesh(temperature, *part, 1, nullptr);
+        stk::io::set_field_output_type(
+          velocity, stk::io::FieldOutputType::VECTOR_3D);
+        stk::mesh::put_field_on_mesh(temperature, *part, nullptr);
         stk::mesh::put_field_on_mesh(*sfs_stress, *part, ndim_*2, nullptr);
     }
 }
@@ -137,12 +139,12 @@ ABLStatistics::average_planes()
 {
     const stk::mesh::Selector sel = stk::mesh::selectUnion(fluid_parts_);
     auto bkts = bulk_.get_buckets(stk::topology::NODE_RANK, sel);
-    const VectorFieldType* coords = meta_.get_field<VectorFieldType>(
+    const VectorFieldType* coords = meta_.get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
-    const VectorFieldType* velocity = meta_.get_field<VectorFieldType>(
+    const VectorFieldType* velocity = meta_.get_field<double>(
         stk::topology::NODE_RANK, field_map_["velocity"]);
-    const ScalarFieldType* temperature = meta_.get_field<ScalarFieldType>(
+    const ScalarFieldType* temperature = meta_.get_field<double>(
         stk::topology::NODE_RANK, field_map_["temperature"]);
 
     // Initialize mean arrays to zero before we start accumulation

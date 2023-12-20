@@ -19,8 +19,8 @@
 #include "core/ParallelInfo.h"
 #include "core/PerfUtils.h"
 
-#include "stk_mesh/base/TopologyDimensions.hpp"
 #include "stk_mesh/base/FEMHelpers.hpp"
+#include "stk_io/IossBridge.hpp"
 
 namespace sierra {
 namespace nalu {
@@ -123,10 +123,11 @@ void Slice::initialize()
     auto timeMon = get_stopwatch(timerName);
 
     auto& meta = mesh_.meta();
-    auto& coords = meta.declare_field<VectorFieldType>(
+    auto& coords = meta.declare_field<double>(
         stk::topology::NODE_RANK, "coordinates");
     stk::mesh::put_field_on_mesh(
         coords, meta.universal_part(), NDim, nullptr);
+    stk::io::set_field_output_type(coords, stk::io::FieldOutputType::VECTOR_3D);
 
     pinfo.info()
         << "Slice: Registering parts to meta data: " << std::endl;
@@ -221,7 +222,7 @@ void Slice::run()
     }
     bulk.modification_end();
 
-    auto* coords = mesh_.meta().get_field<VectorFieldType>(
+    auto* coords = mesh_.meta().get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     pinfo.info() << "Generating coordinate field" << std::endl;
