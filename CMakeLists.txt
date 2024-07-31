@@ -28,8 +28,12 @@ option(ENABLE_REGTESTS "Enable regression tests" off)
 
 find_package(MPI REQUIRED)
 find_package(Trilinos REQUIRED)
-find_package(YAML-CPP REQUIRED)
 find_package(OpenMP)
+
+############################ YAML ######################################
+set(CMAKE_PREFIX_PATH ${YAML_DIR} ${CMAKE_PREFIX_PATH})
+find_package(YAML-CPP 0.6.2 QUIET REQUIRED)
+message(STATUS "Found YAML-CPP = ${YAML_CPP_CMAKE_DIR}")
 
 if (ENABLE_HYPRE)
   find_package(HYPRE REQUIRED)
@@ -45,7 +49,6 @@ endif()
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS})
 include_directories(SYSTEM ${Trilinos_TPL_INCLUDE_DIRS})
-include_directories(SYSTEM ${YAML_CPP_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (HYPRE_FOUND)
   include_directories(SYSTEM ${HYPRE_INCLUDE_DIRS})

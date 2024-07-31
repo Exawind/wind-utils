@@ -16,6 +16,7 @@
 #include "CFDMesh.h"
 #include "PerfUtils.h"
 
+#include <stk_mesh/base/MeshBuilder.hpp>
 #include <stk_mesh/base/FEMHelpers.hpp>
 #include <stk_io/IossBridge.hpp>
 #include <stk_io/StkMeshIoBroker.hpp>
@@ -33,12 +34,10 @@ CFDMesh::CFDMesh
     stk::ParallelMachine& comm,
     const std::string filename
 ) : comm_(comm),
-    meta_(),
-    bulk_(meta_, comm),
     input_db_(filename),
     stkio_(comm)
 {
-  meta_.use_simple_fields();
+  meta_->use_simple_fields();
 }
 
 CFDMesh::CFDMesh
@@ -46,10 +45,13 @@ CFDMesh::CFDMesh
     stk::ParallelMachine& comm,
     const int ndim
 ) : comm_(comm),
-    meta_(ndim),
-    bulk_(meta_, comm),
     stkio_(comm)
-{}
+{
+  stk::mesh::MeshBuilder builder(comm_);
+  builder.set_spatial_dimension(ndim);
+  meta_ = builder.create_meta_data();
+  bulk_ = builder.create(meta_);
+}
 
 void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
 {
@@ -59,15 +61,15 @@ void CFDMesh::init(stk::io::DatabasePurpose db_purpose)
     const std::string timerName("CFDMesh::init_metadata");
     auto timeMon = get_stopwatch(timerName);
     stkio_.add_mesh_database(input_db_, db_purpose);
-    stkio_.set_bulk_data(bulk_);
+    stkio_.set_bulk_data(*bulk_);
     stkio_.create_input_mesh();
     stkio_.add_all_mesh_fields_as_input_fields();
 
     // Everyone needs coordinates
-    VectorFieldType& coords = meta_.declare_field<double>(
+    VectorFieldType& coords = meta_->declare_field<double>(
       stk::topology::NODE_RANK, "coordinates");
     stk::mesh::put_field_on_mesh(
-      coords, meta_.universal_part(), meta_.spatial_dimension(), nullptr);
+      coords, meta_->universal_part(), meta_->spatial_dimension(), nullptr);
     stk::io::set_field_output_type(coords, stk::io::FieldOutputType::VECTOR_3D);
 }
 
@@ -75,7 +77,7 @@ size_t CFDMesh::open_database(std::string output_db)
 {
     size_t fh = stkio_.create_output_mesh(output_db, stk::io::WRITE_RESULTS);
     for (auto fname: output_fields_ ) {
-        stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, meta_);
+        stk::mesh::FieldBase* fld = stk::mesh::get_field_by_name(fname, *meta_);
         if (fld != NULL) {
             stkio_.add_field(fh, *fld, fname);
         }
@@ -129,7 +131,7 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
     const std::string timerName("CFDMesh::calc_bounding_box");
     auto timeMon = get_stopwatch(timerName);
 
-    auto ndim = meta_.spatial_dimension();
+    auto ndim = meta_->spatial_dimension();
     std::vector<double> bBoxMin(3, std::numeric_limits<double>::max());
     std::vector<double> bBoxMax(3, std::numeric_limits<double>::lowest());
 
@@ -138,8 +140,8 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
         bBoxMax[2] = 0.0;
     }
 
-    auto& bkts = bulk_.get_buckets(stk::topology::NODE_RANK, selector);
-    VectorFieldType* coords = meta_.get_field<double>(
+    auto& bkts = bulk_->get_buckets(stk::topology::NODE_RANK, selector);
+    VectorFieldType* coords = meta_->get_field<VectorFieldType>(
         stk::topology::NODE_RANK, "coordinates");
 
     for (auto b: bkts) {
@@ -156,15 +158,15 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
 
     std::vector<double> gMin(3), gMax(3);
     stk::all_reduce_min(
-        bulk_.parallel(), bBoxMin.data(), gMin.data(), ndim);
+        bulk_->parallel(), bBoxMin.data(), gMin.data(), ndim);
     stk::all_reduce_max(
-        bulk_.parallel(), bBoxMax.data(), gMax.data(), ndim);
+        bulk_->parallel(), bBoxMax.data(), gMax.data(), ndim);
 
     PointType minPt(gMin[0], gMin[1], gMin[2]);
     PointType maxPt(gMax[0], gMax[1], gMax[2]);
     BoxType bbox(minPt, maxPt);
 
-    if (verbose && bulk_.parallel_rank() == 0) {
+    if (verbose && bulk_->parallel_rank() == 0) {
         std::cout << "\nMesh bounding box: \n\t" << bbox;
     }
 

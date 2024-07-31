@@ -9,11 +9,14 @@
 #   HexBlockMesh.cpp
 #   Plot3DMesh.cpp
 #   )
-# target_link_libraries(nalumeshutils utilscore
+# target_link_libraries(nalumeshutils
+#   PUBLIC
+#   utilscore
 #   ${Trilinos_TPL_LIBRARIES}
 #   ${Trilinos_LIBRARIES}
-#   ${YAML_CPP_LIBRARIES}
+#   yaml-cpp
 #   ${MPI_LIBRARIES})
+# target_include_directories(nalumeshutils SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 add_executable(abl_mesh
   # Mesh spacing functions
@@ -33,19 +36,23 @@ add_executable(slice_mesh
   )
 
 target_link_libraries(abl_mesh
+  PUBLIC
   struct_grid
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   ${MPI_LIBRARIES})
+target_include_directories(abl_mesh SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 target_link_libraries(slice_mesh
+  PUBLIC
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   ${MPI_LIBRARIES})
+target_include_directories(slice_mesh SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 target_compile_options(abl_mesh
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)

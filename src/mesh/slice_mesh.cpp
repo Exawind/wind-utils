@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 
         sierra::nalu::summarize_memory_usage(comm, pinfo.info());
     }
-    Kokkos::finalize_all();
+    Kokkos::finalize();
 
     stk::parallel_machine_finalize();
     return 0;

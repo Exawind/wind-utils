@@ -202,9 +202,9 @@ void HexBlockBase::generate_elements()
                     static_cast<EntID>(nodeBlock_.size[0]) *
                     static_cast<EntID>(nodeBlock_.size[1]));
             std::iota(nodeIDs.begin(), nodeIDs.end(), start);
-            ThrowRequire(nodeIDs[0] == start);
-            ThrowRequire(nodeIDs[0] < numGlobalNodes);
-            ThrowRequire(nodeIDs[numNodes - 1] <= numGlobalNodes);
+            STK_ThrowRequire(nodeIDs[0] == start);
+            STK_ThrowRequire(nodeIDs[0] < numGlobalNodes);
+            STK_ThrowRequire(nodeIDs[numNodes - 1] <= numGlobalNodes);
             bulk_.declare_entities(
                 stk::topology::NODE_RANK, nodeIDs, meshParts, nodes);
 
@@ -230,9 +230,9 @@ void HexBlockBase::generate_elements()
                     static_cast<EntID>(local.size[0]) *
                     static_cast<EntID>(local.size[1]));
             std::iota(elemIDs.begin(), elemIDs.end(), start);
-            ThrowRequire(elemIDs[0] == start);
-            ThrowRequire(elemIDs[0] < numGlobalElems);
-            ThrowRequire(elemIDs[numElems - 1] <= numGlobalElems);
+            STK_ThrowRequire(elemIDs[0] == start);
+            STK_ThrowRequire(elemIDs[0] < numGlobalElems);
+            STK_ThrowRequire(elemIDs[numElems - 1] <= numGlobalElems);
             bulk_.declare_entities(
                 stk::topology::ELEM_RANK, elemIDs, meshParts, elems);
             pinfo.info() << "done" << std::endl;

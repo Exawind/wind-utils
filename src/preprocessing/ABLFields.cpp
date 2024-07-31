@@ -114,12 +114,12 @@ void ABLFields::load_velocity_info(const YAML::Node& abl)
     auto nHeights = vHeights_.size();
 
     auto velInputs = abl["values"].as<std::vector<std::vector<double>>>();
-    ThrowAssertMsg(
+    STK_ThrowAssertMsg(
         (nHeights == velInputs.size()),
         "ABLFields: Mismatch between sizes of heights and velocities provided "
         "for initializing ABL fields. Check input file.");
 
-    ThrowAssertMsg(
+    STK_ThrowAssertMsg(
         (ndim_ == static_cast<int>(velInputs.at(0).size())),
         "ABLFields: Velocity components have all 3 components");
 
@@ -171,7 +171,7 @@ void ABLFields::load_temperature_info(const YAML::Node& abl)
         wind_utils::get_optional(pnode, "random_gauss_var", thetaGaussVar_);
     }
 
-    ThrowAssertMsg(
+    STK_ThrowAssertMsg(
         (THeights_.size() == TValues_.size()),
         "ABLFields: Mismatch between sizes of heights and temperature values provided"
         "for initializing ABL fields. Check input file.");

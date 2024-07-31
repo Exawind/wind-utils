@@ -2,16 +2,17 @@
 add_executable(boxturb
   BoxTurb.cpp
   BoxTurbIO.cpp
-
   boxturb_main.cpp)
 
 target_link_libraries(
   boxturb
+  PUBLIC
   struct_grid
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   ${MPI_LIBRARIES})
+target_include_directories(boxturb SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(boxturb PROPERTIES
