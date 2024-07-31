@@ -74,8 +74,9 @@ void HITFields::initialize()
     auto& meta = mesh_.meta();
     VectorFieldType& velocity = meta.declare_field<double>(
         stk::topology::NODE_RANK, "velocity");
+    const int nDim = meta.spatial_dimension();
     for (auto part: fluid_parts_) {
-        stk::mesh::put_field_on_mesh(velocity, *part, ndim_, nullptr);
+        stk::mesh::put_field_on_mesh(velocity, *part, nDim, nullptr);
         stk::io::set_field_output_type(
             velocity, stk::io::FieldOutputType::VECTOR_3D);
     }
