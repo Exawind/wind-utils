@@ -17,11 +17,13 @@ add_executable(nalu_preprocess
   )
 
 target_link_libraries(nalu_preprocess
+  PUBLIC
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  ${yaml-cpp}
   ${MPI_LIBRARIES})
+target_include_directories(nalu_preprocess SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 target_compile_options(nalu_preprocess
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)

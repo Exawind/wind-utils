@@ -10,11 +10,13 @@ target_compile_options(turbsim_netcdf
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
 
 target_link_libraries(turbsim_netcdf
+  PUBLIC
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  ${yaml-cpp}
   ${MPI_LIBRARIES})
+target_include_directories(turbsim_netcdf SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(turbsim_netcdf PROPERTIES

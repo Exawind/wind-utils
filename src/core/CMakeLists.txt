@@ -5,8 +5,9 @@ add_library(utilscore
 target_link_libraries(utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   ${MPI_LIBRARIES})
+target_include_directories(utilscore SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 target_compile_options(utilscore
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)

@@ -7,11 +7,13 @@ add_executable(nalu_postprocess
   nalu_postprocess.cpp)
 
 target_link_libraries(nalu_postprocess
+  PUBLIC
   utilscore
   ${Trilinos_TPL_LIBRARIES}
   ${Trilinos_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   ${MPI_LIBRARIES})
+target_include_directories(nalu_postprocess SYSTEM PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
 target_compile_options(nalu_postprocess
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WIND_UTILS_WARN_FLAGS}>)
