@@ -141,7 +141,7 @@ BoxType CFDMesh::calc_bounding_box(const stk::mesh::Selector selector, bool verb
     }
 
     auto& bkts = bulk_->get_buckets(stk::topology::NODE_RANK, selector);
-    VectorFieldType* coords = meta_->get_field<VectorFieldType>(
+    VectorFieldType* coords = meta_->get_field<double>(
         stk::topology::NODE_RANK, "coordinates");
 
     for (auto b: bkts) {
